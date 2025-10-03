@@ -1,0 +1,7 @@
+dist/
+*~
+*.sw*
+*.lock
+*.log
+*.tmp
+ssh_key.pub
