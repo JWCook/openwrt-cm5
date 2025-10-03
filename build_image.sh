@@ -12,6 +12,9 @@ PACKAGES="$(echo "$PACKAGES_REMOVE" | sed 's/\S\+/-&/g') $PACKAGES_ADD"
 echo "Package changes: $PACKAGES"
 echo ""
 
+# Skip building ext4 images
+echo "CONFIG_TARGET_ROOTFS_EXT4FS=n" >> .config
+
 # Add SSH pubkey, if present
 if [ -f /builder/ssh_key.pub ]; then
     mkdir -p files/etc/dropbear
@@ -25,6 +28,7 @@ make image \
     PROFILE="$PROFILE" \
     PACKAGES="$PACKAGES" \
     FILES="files/"
+
 find bin -type f -name "*.img.gz" -exec mv {} ./dist/ \;
 echo "Available images:"
 ls -lh dist
