@@ -4,7 +4,6 @@
 
 uci set network.lan.ipaddr='192.168.2.1'
 uci set network.lan.netmask='255.255.255.0'
-uci commit network
 
 # Set hostname
 uci set system.@system[0].hostname='travelrouter'
@@ -44,6 +43,23 @@ uci set network.wwan.peerdns='0'
 uci delete network.wwan.dns
 uci add_list network.wwan.dns='1.1.1.1'
 uci add_list network.wwan.dns='1.0.0.1'
+
+uci commit network
+
+# Configure built-in WiFi as WAN client
+wifi config
+uci set wireless.radio0.disabled='0'
+uci set wireless.radio0.channel='auto'
+uci set wireless.radio0.band='5g'
+uci set wireless.radio0.htmode='VHT80'
+uci set wireless.radio0.country='US'
+uci commit wireless
+
+# Configure DHCP
+uci set dhcp.lan.start='100'
+uci set dhcp.lan.limit='151'
+uci set dhcp.lan.leasetime='12h'
+uci commit dhcp
 
 # Configure pubkey-only login, if an SSH public key is present
 mkdir -p /etc/dropbear && chmod 700 /etc/dropbear

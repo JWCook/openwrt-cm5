@@ -3,12 +3,19 @@
 set -e
 
 PROFILE="rpi-5"
-PACKAGES_ADD="adguardhome luci-theme-material ca-bundle ca-certificates kmod-mt76x2u kmod-r8169 kmod-usb3 kmod-usb2 kmod-usb2-pci wireless-tools iw mwan3 luci-app-mwan3 travelmate luci-app-travelmate wpad-openssl wireguard-tools luci-proto-wireguard kmod-wireguard curl fish htop jq pv rsync shadow tmux wget vim-fuller xz"
-# Packages to exclude (remove from default image)
+
+# Package categories
+PACKAGES_DRIVERS="kmod-mt76x2u kmod-r8169 kmod-usb3 kmod-usb2 kmod-usb2-pci"
+PACKAGES_LUCI="luci luci-app-firewall luci-app-package-manager luci-light luci-theme-material luci-mod-admin-full luci-mod-network luci-mod-status luci-mod-system luci-proto-ipv6 luci-ssl uhttpd uhttpd-mod-ubus"
+PACKAGES_APPS="adguardhome ca-bundle ca-certificates wireless-tools iw mwan3 luci-app-mwan3 travelmate luci-app-travelmate wpad-openssl wireguard-tools luci-proto-wireguard kmod-wireguard"
+# Optional CLI utils just for admin convenience
+PACKAGES_UTILS="curl fish htop jq pv rsync shadow tmux wget vim-full xz"
+
+# Conflicting packages to remove from default image
 PACKAGES_REMOVE="wpad-basic-mbedtls"
 
 # Combine packages
-PACKAGES="$(echo "$PACKAGES_REMOVE" | sed 's/\S\+/-&/g') $PACKAGES_ADD"
+PACKAGES="$(echo "$PACKAGES_REMOVE" | sed 's/\S\+/-&/g') $PACKAGES_DRIVERS $PACKAGES_LUCI $PACKAGES_APPS $PACKAGES_UTILS"
 echo "Package changes: $PACKAGES"
 echo ""
 
