@@ -1,10 +1,8 @@
 #!/bin/sh
 # UCI default settings, which runs once on first boot
 # Reference: https://openwrt.org/docs/guide-developer/uci-defaults
-. /etc/wireguard.env
-
-uci set network.lan.ipaddr='10.8.0.1'
-uci set network.lan.netmask='255.255.255.0'
+set -e
+test -f /etc/wireguard.env && . /etc/wireguard.env || exit 1
 
 # Set hostname and time
 uci set system.@system[0].hostname='travelrouter'
@@ -293,6 +291,16 @@ if [ -f /etc/dropbear/authorized_keys ]; then
 fi
 
 rm /etc/wireguard.env
+
+# Add custom files to backup configuration
+cat >> /etc/sysupgrade.conf <<'EOF'
+# Travelmate WiFi credentials (auto-discovered networks)
+/etc/config/travelmate
+# AdGuard Home settings and statistics
+/etc/adguardhome.yaml
+/opt/adguardhome/data/
+EOF
+
 # service network restart
 # service dropbear restart
 # service firewall restart
