@@ -23,13 +23,16 @@ docker build -t openwrt-builder .
 
 ## Features
 * Captive portal handling (travelmate)
-* Failover between WiFi and ethernet (mwan3)
+* Android phone USB tethering support
+* Failover between ethernet, USB, and WiFi (mwan3)
 * Ad/tracker blocking (AdGuard Home)
 * VPN (Wireguard)
 
 ### Network diagram
 ```
-WiFi ──→ Travelmate ──→ trm_wwan interface ─┐
-                                            ├──→ mwan3 ──→ Active WAN ──→ AdGuard ──→ Wireguard VPN ──→ Internet
-Ethernet ──→ DHCP ──→ wan interface (eth0) ─┘
+Ethernet (ETH0) ──→ DHCP ──→ wan ──┐
+                                   │
+4G/5G ──→ Phone USB ──→ usb_wan ───┼─→ mwan3 ──→ Active WAN ──→ AdGuard ──→ WireGuard VPN ──→ Internet
+                                   │
+WiFi ──→ Travelmate ──→ trm_wwan ──┘
 ```

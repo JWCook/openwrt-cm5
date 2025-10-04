@@ -53,6 +53,15 @@ uci delete network.trm_wwan.dns
 uci add_list network.trm_wwan.dns='1.1.1.1'
 uci add_list network.trm_wwan.dns='1.0.0.1'
 
+# Configure USB tethering interface (Android)
+uci set network.usb_wan=interface
+uci set network.usb_wan.device='usb0'
+uci set network.usb_wan.proto='dhcp'
+uci set network.usb_wan.metric='10'
+uci delete network.usb_wan.dns
+uci add_list network.usb_wan.dns='1.1.1.1'
+uci add_list network.usb_wan.dns='1.0.0.1'
+
 uci commit network
 
 # Configure built-in WiFi as WAN client
@@ -76,6 +85,7 @@ uci commit dhcp
 uci delete firewall.@zone[1].network 2>/dev/null || true
 uci add_list firewall.@zone[1].network='wan'
 uci add_list firewall.@zone[1].network='trm_wwan'
+uci add_list firewall.@zone[1].network='usb_wan'
 uci commit firewall
 
 # Configure mwan3 for multi-WAN failover
@@ -97,6 +107,24 @@ uci set mwan3.trm_wwan.failure_interval='10'
 uci set mwan3.trm_wwan.recovery_interval='10'
 uci set mwan3.trm_wwan.down='3'
 uci set mwan3.trm_wwan.up='5'
+
+# Interface: usb_wan (Phone USB tethering)
+uci set mwan3.usb_wan=interface
+uci set mwan3.usb_wan.enabled='1'
+uci set mwan3.usb_wan.initial_state='offline'
+uci set mwan3.usb_wan.family='ipv4'
+uci set mwan3.usb_wan.track_method='ping'
+uci set mwan3.usb_wan.track_ip='1.1.1.1 1.0.0.1'
+uci set mwan3.usb_wan.reliability='1'
+uci set mwan3.usb_wan.count='1'
+uci set mwan3.usb_wan.size='56'
+uci set mwan3.usb_wan.max_ttl='60'
+uci set mwan3.usb_wan.timeout='4'
+uci set mwan3.usb_wan.interval='10'
+uci set mwan3.usb_wan.failure_interval='5'
+uci set mwan3.usb_wan.recovery_interval='5'
+uci set mwan3.usb_wan.down='3'
+uci set mwan3.usb_wan.up='3'
 
 # Interface: wan (Ethernet backup)
 uci set mwan3.wan=interface
@@ -141,30 +169,38 @@ uci set mwan3.wg0_m1_w5.interface='wg0'
 uci set mwan3.wg0_m1_w5.metric='1'
 uci set mwan3.wg0_m1_w5.weight='5'
 
-# Member: trm_wwan (WiFi WAN, fallback if VPN down)
-uci set mwan3.trm_wwan_m2_w3=member
-uci set mwan3.trm_wwan_m2_w3.interface='trm_wwan'
-uci set mwan3.trm_wwan_m2_w3.metric='2'
-uci set mwan3.trm_wwan_m2_w3.weight='3'
+# Member: wan (Ethernet WAN, highest priority if connected)
+uci set mwan3.wan_m2_w4=member
+uci set mwan3.wan_m2_w4.interface='wan'
+uci set mwan3.wan_m2_w4.metric='2'
+uci set mwan3.wan_m2_w4.weight='4'
 
-# Member: wan (Ethernet WAN, last resort)
-uci set mwan3.wan_m3_w2=member
-uci set mwan3.wan_m3_w2.interface='wan'
-uci set mwan3.wan_m3_w2.metric='3'
-uci set mwan3.wan_m3_w2.weight='2'
+# Member: usb_wan (Phone tethering, 2nd priority if connected)
+uci set mwan3.usb_wan_m3_w3=member
+uci set mwan3.usb_wan_m3_w3.interface='usb_wan'
+uci set mwan3.usb_wan_m3_w3.metric='3'
+uci set mwan3.usb_wan_m3_w3.weight='3'
+
+# Member: trm_wwan (WiFi WAN, last priority; use if no ethernet or USB is connected)
+uci set mwan3.trm_wwan_m4_w2=member
+uci set mwan3.trm_wwan_m4_w2.interface='trm_wwan'
+uci set mwan3.trm_wwan_m4_w2.metric='4'
+uci set mwan3.trm_wwan_m4_w2.weight='2'
 
 # Policy: prefer VPN, failover to direct WAN connections
 uci set mwan3.vpn_failover=policy
 uci set mwan3.vpn_failover.last_resort='default'
 uci add_list mwan3.vpn_failover.use_member='wg0_m1_w5'
-uci add_list mwan3.vpn_failover.use_member='trm_wwan_m2_w3'
-uci add_list mwan3.vpn_failover.use_member='wan_m3_w2'
+uci add_list mwan3.vpn_failover.use_member='wan_m2_w4'
+uci add_list mwan3.vpn_failover.use_member='usb_wan_m3_w3'
+uci add_list mwan3.vpn_failover.use_member='trm_wwan_m4_w2'
 
 # Policy: direct WAN only (for VPN endpoint traffic)
 uci set mwan3.wan_only=policy
 uci set mwan3.wan_only.last_resort='default'
-uci add_list mwan3.wan_only.use_member='trm_wwan_m2_w3'
-uci add_list mwan3.wan_only.use_member='wan_m3_w2'
+uci add_list mwan3.wan_only.use_member='wan_m2_w4'
+uci add_list mwan3.wan_only.use_member='usb_wan_m3_w3'
+uci add_list mwan3.wan_only.use_member='trm_wwan_m4_w2'
 
 # Rule: VPN endpoint traffic bypasses VPN (prevent routing loop)
 # This will be configured dynamically when VPN is set up

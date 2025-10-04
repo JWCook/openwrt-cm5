@@ -1,7 +1,7 @@
 # Custom packages to install / remove
 
 # USB + WiFi drivers
-PACKAGES_DRIVERS="kmod-mt76x2u kmod-r8169 kmod-usb3 kmod-usb2 kmod-usb2-pci"
+PACKAGES_DRIVERS="kmod-mt76x2u kmod-r8169 kmod-usb3 kmod-usb2 kmod-usb2-pci kmod-usb-net-rndis"
 
 # LuCI packages
 PACKAGES_LUCI="luci luci-app-firewall luci-app-package-manager luci-light luci-theme-material luci-mod-admin-full luci-mod-network luci-mod-status luci-mod-system luci-proto-ipv6 luci-ssl uhttpd uhttpd-mod-ubus"
