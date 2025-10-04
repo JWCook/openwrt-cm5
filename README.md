@@ -17,8 +17,11 @@ Additional config files that can be edited/added, if needed:
 
 ## Usage
 ```sh
-docker build -t openwrt-builder .
-./run.sh
+# Build imagebuilder container image + openwrt image
+just build
+
+# Or, build openwrt image only (after first run)
+just build-openwrt
 ```
 
 ## Features

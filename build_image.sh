@@ -36,6 +36,12 @@ awk '
 }
 ' config/vpn.conf > files/etc/wireguard.env
 
+# Validate wireguard config
+if ! grep -qE '^VPN_(PRIVATE_KEY|ADDRESS|DNS|PUBLIC_KEY|HOST|PORT)=.+$' files/etc/wireguard.env | \
+   [ $(grep -cE '^VPN_(PRIVATE_KEY|ADDRESS|DNS|PUBLIC_KEY|HOST|PORT)=' files/etc/wireguard.env) -eq 6 ]; then
+    echo "ERROR: Invalid WireGuard config" && exit 1
+fi
+
 # Add SSH pubkey (optional)
 if [ -f config/ssh_key.pub ]; then
     mkdir -p files/etc/dropbear
