@@ -1,0 +1,15 @@
+services:
+  openwrt-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - OPENWRT_VERSION=24.10.3
+        - TARGET=bcm27xx
+        - SUBTARGET=bcm2712
+    image: openwrt-builder
+    volumes:
+      - ./dist:/builder/imagebuilder/dist
+      - ./config:/builder/imagebuilder/config
+      - ./scripts:/builder/imagebuilder/user-scripts
+    command: /builder/imagebuilder/user-scripts/build_image.sh

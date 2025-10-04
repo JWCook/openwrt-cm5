@@ -1,9 +1,9 @@
 FROM debian:bookworm-slim
 
 # Current OpenWRT versions: https://downloads.openwrt.org/releases/
-ARG OPENWRT_VERSION=24.10.3
-ARG TARGET=bcm27xx
-ARG SUBTARGET=bcm2712
+ARG OPENWRT_VERSION
+ARG TARGET
+ARG SUBTARGET
 
 # Install required dependencies for OpenWRT Image Builder
 RUN apt-get update && apt-get install -y \

@@ -6,6 +6,10 @@ OpenWRT build for a travel router using the following hardware:
 
 Based on the [RPi5 (bcm27xx/bcm2712)](https://firmware-selector.openwrt.org/?target=bcm27xx%2Fbcm2712&id=rpi-5) build.
 
+## Prerequisites
+* Docker + [Docker compose](https://docs.docker.com/compose/install/)
+* [just](https://github.com/casey/just?tab=readme-ov-file#packages)
+
 ## Configuration
 Add Wireguard config file to `config/vpn.conf`. See example at `config/vpn.conf.example`
 
@@ -17,12 +21,14 @@ Additional config files that can be edited/added, if needed:
 
 ## Usage
 ```sh
-# Build imagebuilder container image + openwrt image
-just build
-
-# Or, build openwrt image only (after first run)
-just build-openwrt
+just init   # Check/init config
+just build  # Build OpenWRT image
 ```
+
+## Post-installation
+Manual steps:
+* Set root password
+* Change adguard password
 
 ## Features
 * Captive portal handling (travelmate)
@@ -33,9 +39,9 @@ just build-openwrt
 
 ### Network diagram
 ```
-Ethernet (ETH0) ──→ DHCP ──→ wan ──┐
-                                   │
-4G/5G ──→ Phone USB ──→ usb_wan ───┼─→ mwan3 ──→ Active WAN ──→ AdGuard ──→ WireGuard VPN ──→ Internet
-                                   │
-WiFi ──→ Travelmate ──→ trm_wwan ──┘
+[p0] Ethernet (ETH0) ──→ DHCP ──→ wan ──┐
+                                        │
+[p1] 4G/5G ──→ Phone USB ──→ usb_wan ───┼─→ mwan3 ──→ Active WAN ──→ AdGuard ──→ WireGuard VPN ──→ Internet
+                                        │
+[p3] WiFi ──→ Travelmate ──→ trm_wwan ──┘
 ```

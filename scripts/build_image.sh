@@ -14,7 +14,7 @@ echo ""
 cp config/uci-defaults.sh files/etc/uci-defaults/99-custom-config
 cp config/adguardhome.yaml files/etc/adguardhome.yaml
 mkdir -p files/usr/local/bin
-cp healthcheck.sh files/usr/local/bin/router-health
+cp user-scripts/healthcheck.sh files/usr/local/bin/router-health
 chmod +x files/usr/local/bin/router-health
 cat config/imagebuilder.config >> .config
 

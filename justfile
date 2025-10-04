@@ -1,8 +1,8 @@
 default:
     @just --choose
 
-build:
-    @just init build-container build-openwrt
+all:
+    @just init build
 
 # Initialize config files
 init:
@@ -10,17 +10,7 @@ init:
     test -f config/vpn.conf     || (cp config/vpn.conf.example config/vpn.conf \
         && echo "Enter VPN config into config/vpn.conf" && exit 1)
 
-# Build OpenWRT imagebuilder container image
-build-container:
-    docker build -t openwrt-builder .
-
-# Build OpenWrt image
-build-openwrt:
+# Build imagebuilder image (if necessary) and OpenWRT image
+build:
     mkdir -p dist
-    docker run --rm \
-        -v $(pwd)/dist:/builder/imagebuilder/dist \
-        -v $(pwd)/config:/builder/imagebuilder/config \
-        -v $(pwd)/build_image.sh:/builder/imagebuilder/build_image.sh \
-        -v $(pwd)/healthcheck.sh:/builder/imagebuilder/healthcheck.sh \
-        openwrt-builder \
-        /builder/imagebuilder/build_image.sh
+    docker compose up
