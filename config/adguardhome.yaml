@@ -11,7 +11,7 @@ users:
 dns:
   bind_hosts:
     - 0.0.0.0
-    - 192.168.2.1
+    - 10.8.0.1
   port: 53
   # Upstream DNS will be set from VPN_DNS on first boot
   upstream_dns:
@@ -22,7 +22,7 @@ dns:
     - 1.0.0.1
   allowed_clients:
     - localhost
-    - 192.168.2.0/24
+    - 10.8.0.0/24
   ratelimit: 20
   refuse_any: true
   enable_dnssec: false
