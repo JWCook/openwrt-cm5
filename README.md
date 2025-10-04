@@ -19,3 +19,10 @@ Config files that can be edited/added, if needed:
 docker build -t openwrt-builder .
 ./run.sh
 ```
+
+## Network diagram
+```
+WiFi ──→ Travelmate ──→ trm_wwan interface ─┐
+                                            ├──→ mwan3 ──→ Active WAN ──→ Wireguard VPN ──→ Internet
+Ethernet ──→ DHCP ──→ wan interface (eth0) ─┘
+```

@@ -30,19 +30,17 @@ uci add_list network.@device[0].ports='eth1'
 uci set network.wan=interface
 uci set network.wan.device='eth0'
 uci set network.wan.proto='dhcp'
-uci set network.wan.metric='20'
 uci delete network.wan.dns
 uci add_list network.wan.dns='1.1.1.1'
 uci add_list network.wan.dns='1.0.0.1'
 
-# Configure built-in WiFi as WAN (primary)
-uci set network.wwan=interface
-uci set network.wwan.proto='dhcp'
-uci set network.wwan.metric='10'
-uci set network.wwan.peerdns='0'
-uci delete network.wwan.dns
-uci add_list network.wwan.dns='1.1.1.1'
-uci add_list network.wwan.dns='1.0.0.1'
+# Configure interface for Travelmate
+uci set network.trm_wwan=interface
+uci set network.trm_wwan.proto='dhcp'
+uci set network.trm_wwan.peerdns='0'
+uci delete network.trm_wwan.dns
+uci add_list network.trm_wwan.dns='1.1.1.1'
+uci add_list network.trm_wwan.dns='1.0.0.1'
 
 uci commit network
 
@@ -55,11 +53,6 @@ uci set wireless.radio0.htmode='VHT80'
 uci set wireless.radio0.country='US'
 uci commit wireless
 
-# Configure interface for Travelmate
-uci set network.trm_wwan=interface
-uci set network.trm_wwan.proto='dhcp'
-uci set network.trm_wwan.metric='10'
-
 # Configure DHCP
 uci set dhcp.lan.start='100'
 uci set dhcp.lan.limit='151'
@@ -69,15 +62,77 @@ uci commit dhcp
 # Configure firewall
 uci delete firewall.@zone[1].network 2>/dev/null || true
 uci add_list firewall.@zone[1].network='wan'
-uci add_list firewall.@zone[1].network='wwan'
 uci add_list firewall.@zone[1].network='trm_wwan'
 uci commit firewall
+
+# Configure mwan3 for multi-WAN failover
+# Interface: trm_wwan (WiFi via Travelmate)
+uci set mwan3.trm_wwan=interface
+uci set mwan3.trm_wwan.enabled='1'
+uci set mwan3.trm_wwan.initial_state='online'
+uci set mwan3.trm_wwan.family='ipv4'
+uci set mwan3.trm_wwan.track_method='ping'
+uci set mwan3.trm_wwan.track_ip='1.1.1.1 1.0.0.1'
+uci set mwan3.trm_wwan.reliability='1'
+uci set mwan3.trm_wwan.count='1'
+uci set mwan3.trm_wwan.size='56'
+uci set mwan3.trm_wwan.max_ttl='60'
+uci set mwan3.trm_wwan.timeout='4'
+uci set mwan3.trm_wwan.interval='10'
+uci set mwan3.trm_wwan.failure_interval='5'
+uci set mwan3.trm_wwan.recovery_interval='5'
+uci set mwan3.trm_wwan.down='3'
+uci set mwan3.trm_wwan.up='3'
+
+# Interface: wan (Ethernet backup)
+uci set mwan3.wan=interface
+uci set mwan3.wan.enabled='1'
+uci set mwan3.wan.initial_state='online'
+uci set mwan3.wan.family='ipv4'
+uci set mwan3.wan.track_method='ping'
+uci set mwan3.wan.track_ip='1.1.1.1 1.0.0.1'
+uci set mwan3.wan.reliability='1'
+uci set mwan3.wan.count='1'
+uci set mwan3.wan.size='56'
+uci set mwan3.wan.max_ttl='60'
+uci set mwan3.wan.timeout='4'
+uci set mwan3.wan.interval='10'
+uci set mwan3.wan.failure_interval='5'
+uci set mwan3.wan.recovery_interval='5'
+uci set mwan3.wan.down='3'
+uci set mwan3.wan.up='3'
+
+# Member: trm_wwan with higher priority
+uci set mwan3.trm_wwan_m1_w3=member
+uci set mwan3.trm_wwan_m1_w3.interface='trm_wwan'
+uci set mwan3.trm_wwan_m1_w3.metric='1'
+uci set mwan3.trm_wwan_m1_w3.weight='3'
+
+# Member: wan with lower priority
+uci set mwan3.wan_m2_w2=member
+uci set mwan3.wan_m2_w2.interface='wan'
+uci set mwan3.wan_m2_w2.metric='2'
+uci set mwan3.wan_m2_w2.weight='2'
+
+# Policy: prefer WiFi, failover to ethernet
+uci set mwan3.balanced=policy
+uci set mwan3.balanced.last_resort='unreachable'
+uci add_list mwan3.balanced.use_member='trm_wwan_m1_w3'
+uci add_list mwan3.balanced.use_member='wan_m2_w2'
+
+# Rule: use balanced policy for all traffic
+uci set mwan3.default_rule=rule
+uci set mwan3.default_rule.dest_ip='0.0.0.0/0'
+uci set mwan3.default_rule.use_policy='balanced'
+uci set mwan3.default_rule.family='ipv4'
+
+uci commit mwan3
 
 # Enable and configure Travelmate
 uci set travelmate.global=travelmate
 uci set travelmate.global.trm_enabled='1'
 uci set travelmate.global.trm_captive='1'
-uci set travelmate.global.trm_netcheck='1'
+uci set travelmate.global.trm_netcheck='0'
 uci set travelmate.global.trm_autoadd='0'
 uci set travelmate.global.trm_timeout='60'
 uci set travelmate.global.trm_radio='radio0'
@@ -87,11 +142,10 @@ uci commit travelmate
 # Create WireGuard interface
 uci set network.wg0=interface
 uci set network.wg0.proto='wireguard'
-uci set network.wg0.metric='5'
 
 # Create WireGuard peer
 uci add network wireguard_wg0
-uci set network.@wireguard_wg0[-1].persistent_keepalive='25'
+uci set network.@wireguard_wg0[-1].persistent_keepalive='15'
 uci set network.@wireguard_wg0[-1].route_allowed_ips='1'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='0.0.0.0/0'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='::/0'
@@ -125,14 +179,10 @@ uci add firewall forwarding
 uci set firewall.@forwarding[-1].src='lan'
 uci set firewall.@forwarding[-1].dest='wgvpn'
 
-# Allow WireGuard traffic through WAN
-uci add firewall rule
-uci set firewall.@rule[-1].name='Allow-WireGuard'
-uci set firewall.@rule[-1].src='wan'
-uci set firewall.@rule[-1].dest_port='51820'
-uci set firewall.@rule[-1].proto='udp'
-uci set firewall.@rule[-1].target='ACCEPT'
-uci set firewall.@rule[-1].family='ipv4'
+# Allow forwarding from WAN to WireGuard (for mwan3 routing)
+uci add firewall forwarding
+uci set firewall.@forwarding[-1].src='wan'
+uci set firewall.@forwarding[-1].dest='wgvpn'
 
 uci commit network
 uci commit firewall
