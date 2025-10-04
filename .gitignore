@@ -5,4 +5,4 @@ dist/
 *.log
 *.tmp
 ssh_key.pub
-wireguard.env
+vpn.conf

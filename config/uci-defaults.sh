@@ -1,6 +1,7 @@
 #!/bin/sh
 # UCI default settings, which runs once on first boot
 # Reference: https://openwrt.org/docs/guide-developer/uci-defaults
+. /etc/wireguard.env
 
 uci set network.lan.ipaddr='10.8.0.1'
 uci set network.lan.netmask='255.255.255.0'
@@ -67,10 +68,8 @@ uci set dhcp.lan.start='100'
 uci set dhcp.lan.limit='151'
 uci set dhcp.lan.leasetime='12h'
 uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
-
 # Disable dnsmasq DNS (AdGuard Home will handle it)
 uci set dhcp.@dnsmasq[0].port='0'
-
 uci commit dhcp
 
 # Configure firewall
@@ -180,6 +179,10 @@ uci set mwan3.default_rule.dest_ip='0.0.0.0/0'
 uci set mwan3.default_rule.use_policy='vpn_failover'
 uci set mwan3.default_rule.family='ipv4'
 
+# Rule: route VPN endpoint traffic directly (prevent routing loop)
+uci set mwan3.vpn_endpoint_rule.dest_ip="$VPN_HOST"
+uci set mwan3.vpn_endpoint_rule.dest_port="$VPN_PORT"
+
 uci commit mwan3
 
 # Enable and configure Travelmate
@@ -197,6 +200,9 @@ uci commit travelmate
 uci set network.wg0=interface
 uci set network.wg0.proto='wireguard'
 uci set network.wg0.mtu='1380'
+uci set network.wg0.private_key="$VPN_PRIVATE_KEY"
+uci add_list network.wg0.addresses="$VPN_ADDRESS"
+uci add_list network.wg0.dns="$VPN_DNS"
 
 # Create WireGuard peer
 uci add network wireguard_wg0
@@ -204,31 +210,11 @@ uci set network.@wireguard_wg0[-1].persistent_keepalive='15'
 uci set network.@wireguard_wg0[-1].route_allowed_ips='1'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='0.0.0.0/0'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='::/0'
+uci set network.@wireguard_wg0[-1].public_key="$VPN_PUBLIC_KEY"
+uci set network.@wireguard_wg0[-1].endpoint_host="$VPN_HOST"
+uci set network.@wireguard_wg0[-1].endpoint_port="$VPN_PORT"
 
-# Load WireGuard configuration from env file
-if [ -f /etc/wireguard.env ]; then
-    . /etc/wireguard.env
-
-    uci set network.wg0.private_key="$VPN_PRIVATE_KEY"
-    uci add_list network.wg0.addresses="$VPN_ADDRESS"
-    uci add_list network.wg0.dns="$VPN_DNS"
-    uci set network.@wireguard_wg0[-1].public_key="$VPN_PUBLIC_KEY"
-    uci set network.@wireguard_wg0[-1].endpoint_host="$VPN_HOST"
-    uci set network.@wireguard_wg0[-1].endpoint_port="$VPN_PORT"
-
-    # Configure mwan3 rule to route VPN endpoint traffic directly (prevent routing loop)
-    uci set mwan3.vpn_endpoint_rule.dest_ip="$VPN_HOST"
-    uci set mwan3.vpn_endpoint_rule.dest_port="$VPN_PORT"
-    uci commit mwan3
-
-    # Update AdGuard Home upstream DNS to use VPN DNS
-    if [ -f /etc/adguardhome.yaml ]; then
-        sed -i "s|upstream_dns:|upstream_dns:\n    - $VPN_DNS|" /etc/adguardhome.yaml
-        sed -i "/1\.1\.1\.1/d; /1\.0\.0\.1/d" /etc/adguardhome.yaml
-    fi
-
-    rm /etc/wireguard.env
-fi
+uci commit mwan3
 
 # Configure WireGuard firewall zone
 uci add firewall zone
@@ -253,6 +239,12 @@ uci set firewall.@forwarding[-1].dest='wgvpn'
 uci commit network
 uci commit firewall
 
+# Update AdGuard Home upstream DNS to use VPN DNS
+if [ -f /etc/adguardhome.yaml ]; then
+    sed -i "s|upstream_dns:|upstream_dns:\n    - $VPN_DNS|" /etc/adguardhome.yaml
+    sed -i "/1\.1\.1\.1/d; /1\.0\.0\.1/d" /etc/adguardhome.yaml
+fi
+
 # Configure pubkey-only login, if an SSH public key is present
 mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
 if [ -f /etc/dropbear/authorized_keys ]; then
@@ -264,6 +256,7 @@ if [ -f /etc/dropbear/authorized_keys ]; then
     uci commit dropbear
 fi
 
+rm /etc/wireguard.env
 # service network restart
 # service dropbear restart
 # service firewall restart

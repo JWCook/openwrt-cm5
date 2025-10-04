@@ -7,11 +7,12 @@ OpenWRT build for a travel router using the following hardware:
 Based on the [RPi5 (bcm27xx/bcm2712)](https://firmware-selector.openwrt.org/?target=bcm27xx%2Fbcm2712&id=rpi-5) build.
 
 ## Configuration
-Config files that can be edited/added, if needed:
+Add Wireguard config file to `config/vpn.conf`. See example at `config/vpn.conf.example`
+
+Additional config files that can be edited/added, if needed:
 * `config/packages.sh`: extra packages to install
-* `config/imagebuilder.config`: [OpenWRT image builder](https://openwrt.org/docs/guide-user/additional-software/imagebuilder) config
+* `config/imagebuilder.config`: [OpenWRT image builder](https://openwrt.org/docs/guide-user/additional-software/imagebuilder) options
 * `config/uci-defaults.sh`: UCI default settings (run once on first boot)
-* `config/wireguard.env`: (Optional) add Wireguard VPN config
 * `config/ssh_key.pub`: (Optional) add an SSH public key to use for SSH authentication (instead of a password)
 
 ## Usage

@@ -11,14 +11,27 @@ echo "Package changes: $PACKAGES"
 echo ""
 
 # Copy config files
-cp config/uci-defaults.sh /builder/imagebuilder/files/etc/uci-defaults/99-custom-config
+cp config/uci-defaults.sh files/etc/uci-defaults/99-custom-config
 cp config/adguardhome.yaml files/etc/adguardhome.yaml
 cat config/imagebuilder.config >> .config
 
-# Add wireguard config (optional)
-if [ -f config/wireguard.env ]; then
-    cp config/wireguard.env /builder/imagebuilder/files/etc/wireguard.env
+if ! test -f config/vpn.conf; then
+    echo "Wireguard VPN config missing; add to config/vpn.conf"
+    exit 1
 fi
+
+# Convert wireguard config to an env file
+awk '
+/^PrivateKey/ { print "VPN_PRIVATE_KEY=" $3 }
+/^Address/ { print "VPN_ADDRESS=" $3 }
+/^DNS/ { print "VPN_DNS=" $3 }
+/^PublicKey/ { print "VPN_PUBLIC_KEY=" $3 }
+/^Endpoint/ {
+    split($3, parts, ":")
+    print "VPN_HOST=" parts[1]
+    print "VPN_PORT=" parts[2]
+}
+' config/vpn.conf > files/etc/wireguard.env
 
 # Add SSH pubkey (optional)
 if [ -f config/ssh_key.pub ]; then

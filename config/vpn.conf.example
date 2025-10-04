@@ -1,0 +1,11 @@
+# Wireguard VPN config
+
+[Interface]
+PrivateKey = privkey
+Address = 10.2.0.2/32
+DNS = 10.2.0.1
+
+[Peer]
+PublicKey = pubkey
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = vpn.example.com:51820
