@@ -10,13 +10,10 @@ PACKAGES="$(echo "$PACKAGES_REMOVE" | sed 's/\S\+/-&/g') $PACKAGES_ADD"
 echo "Package changes: $PACKAGES"
 echo ""
 
-# Copy uci-defaults config
+# Copy config files
 cp config/uci-defaults.sh /builder/imagebuilder/files/etc/uci-defaults/99-custom-config
-
-# Add imagebuilder config (optional)
-if [ -f config/imagebuilder.config ]; then
-    cat config/imagebuilder.config >> .config
-fi
+cp config/adguardhome.yaml files/etc/adguardhome.yaml
+cat config/imagebuilder.config >> .config
 
 # Add wireguard config (optional)
 if [ -f config/wireguard.env ]; then
@@ -29,6 +26,7 @@ if [ -f config/ssh_key.pub ]; then
     cp config/ssh_key.pub files/etc/dropbear/authorized_keys
     chmod 600 files/etc/dropbear/authorized_keys
 fi
+
 
 # Build and relocate images
 make image \

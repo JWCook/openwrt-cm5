@@ -53,10 +53,15 @@ uci set wireless.radio0.htmode='VHT80'
 uci set wireless.radio0.country='US'
 uci commit wireless
 
-# Configure DHCP
+# Configure DHCP and DNS
 uci set dhcp.lan.start='100'
 uci set dhcp.lan.limit='151'
 uci set dhcp.lan.leasetime='12h'
+uci add_list dhcp.lan.dhcp_option='6,192.168.2.1'
+
+# Disable dnsmasq DNS (AdGuard Home will handle it)
+uci set dhcp.@dnsmasq[0].port='0'
+
 uci commit dhcp
 
 # Configure firewall
@@ -160,6 +165,12 @@ if [ -f /etc/wireguard.env ]; then
     uci set network.@wireguard_wg0[-1].public_key="$VPN_PUBLIC_KEY"
     uci set network.@wireguard_wg0[-1].endpoint_host="$VPN_HOST"
     uci set network.@wireguard_wg0[-1].endpoint_port="$VPN_PORT"
+
+    # Update AdGuard Home upstream DNS to use VPN DNS
+    if [ -f /etc/adguardhome.yaml ]; then
+        sed -i "s|upstream_dns:|upstream_dns:\n    - $VPN_DNS|" /etc/adguardhome.yaml
+        sed -i "/1\.1\.1\.1/d; /1\.0\.0\.1/d" /etc/adguardhome.yaml
+    fi
 
     rm /etc/wireguard.env
 fi

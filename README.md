@@ -20,9 +20,15 @@ docker build -t openwrt-builder .
 ./run.sh
 ```
 
-## Network diagram
+## Features
+* Captive portal handling (travelmate)
+* Failover between WiFi and ethernet (mwan3)
+* Ad/tracker blocking (AdGuard Home)
+* VPN (Wireguard)
+
+### Network diagram
 ```
 WiFi ──→ Travelmate ──→ trm_wwan interface ─┐
-                                            ├──→ mwan3 ──→ Active WAN ──→ Wireguard VPN ──→ Internet
+                                            ├──→ mwan3 ──→ Active WAN ──→ AdGuard ──→ Wireguard VPN ──→ Internet
 Ethernet ──→ DHCP ──→ wan interface (eth0) ─┘
 ```

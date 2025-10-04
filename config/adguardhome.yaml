@@ -1,0 +1,193 @@
+theme: dark
+
+http:
+  address: 0.0.0.0:8080
+  session_ttl: 720h
+
+users:
+  - name: admin
+    password: $2a$10$YKz2lUHIeIZ8vWmYlhqLGOKFqLdN8QdZ8TqnQNXHGxKZhLjN5GHNO  # "changeme" - change via web UI
+
+dns:
+  bind_hosts:
+    - 0.0.0.0
+    - 192.168.2.1
+  port: 53
+  # Upstream DNS will be set from VPN_DNS on first boot
+  upstream_dns:
+    - 1.1.1.1
+    - 1.0.0.1
+  bootstrap_dns:
+    - 1.1.1.1
+    - 1.0.0.1
+  allowed_clients:
+    - localhost
+    - 192.168.2.0/24
+  ratelimit: 20
+  refuse_any: true
+  enable_dnssec: false
+  edns_client_subnet:
+    enabled: false
+  cache_size: 4194304
+  cache_ttl_min: 0
+  cache_ttl_max: 0
+  cache_optimistic: false
+  upstream_mode: fastest_addr
+
+filtering:
+  protection_enabled: true
+  filtering_enabled: true
+  blocked_response_ttl: 10
+  parental_enabled: false
+  safe_search:
+    enabled: false
+  rewrites: []
+  blocked_services:
+    schedule:
+      time_zone: UTC
+    ids: []
+
+filters:
+  - enabled: true
+    url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+    name: AdGuard DNS filter
+    id: 1
+  - enabled: true
+    url: https://raw.githubusercontent.com/AdguardTeam/cname-trackers/master/combined_disguised_trackers_justdomains.txt
+    name: AdGuard CNAME-disguised trackers
+    id: 2
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
+    name: AdAway Default Blocklist
+    id: 2
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_4.txt
+    name: Dan Pollock's List
+    id: 1697906941
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_27.txt
+    name: OISD Blocklist Big
+    id: 1697906942
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_3.txt
+    name: Peter Lowe's Blocklist
+    id: 1697906943
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_34.txt
+    name: HaGeZi Multi NORMAL
+    id: 1697906944
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_33.txt
+    name: Steven Black's List
+    id: 1697906945
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_38.txt
+    name: 1Hosts (mini)
+    id: 1697906946
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_6.txt
+    name: Dandelion Sprout's Game Console Adblock List
+    id: 1697906947
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_23.txt
+    name: WindowsSpyBlocker - Hosts spy rules
+    id: 1697906948
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_7.txt
+    name: Perflyst and Dandelion Sprout's Smart-TV Blocklist
+    id: 1697906949
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_30.txt
+    name: Phishing URL Blocklist (PhishTank and OpenPhish)
+    id: 1697906950
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_12.txt
+    name: Dandelion Sprout's Anti-Malware List
+    id: 1697906951
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_8.txt
+    name: NoCoin Filter List
+    id: 1697906952
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_10.txt
+    name: Scam Blocklist by DurableNapkin
+    id: 1697906953
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_42.txt
+    name: ShadowWhisperer's Malware List
+    id: 1697906954
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_31.txt
+    name: Stalkerware Indicators List
+    id: 1697906955
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_9.txt
+    name: The Big List of Hacked Malware Web Sites
+    id: 1697906956
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_11.txt
+    name: Malicious URL Blocklist (URLHaus)
+    id: 1697906957
+  - enabled: true
+    url: https://nsfw.oisd.nl
+    name: OISD NSFW
+    id: 1697906958
+
+whitelist_filters:
+  - enabled: true
+    url: https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
+    name: anudeepND's whitelist
+    id: 1697906960
+  - enabled: true
+    url: https://raw.githubusercontent.com/hl2guide/AdGuard-Home-Whitelist/main/whitelist.txt
+    name: AdGuardTeam/AdGuardHome whitelist
+    id: 1697906961
+
+user_rules:
+  - '@@||captive.apple.com^'
+  - '@@||connectivitycheck.gstatic.com^'
+  - '@@||clients3.google.com^'
+  - '@@||nmcheck.gnome.org^'
+  - '@@||detectportal.firefox.com^'
+  - '@@||www.msftconnecttest.com^'
+  - '@@||www.msftncsi.com^'
+
+dhcp:
+  enabled: false
+
+clients:
+  runtime_sources:
+    whois: true
+    arp: true
+    rdns: true
+    dhcp: true
+    hosts: true
+  persistent: []
+
+log:
+  file: ""
+  max_backups: 0
+  max_size: 100
+  max_age: 3
+  compress: false
+  local_time: false
+  verbose: false
+
+os:
+  group: ""
+  user: ""
+  rlimit_nofile: 0
+
+querylog:
+  enabled: true
+  file_enabled: true
+  interval: 24h
+  size_memory: 1000
+  ignored: []
+
+statistics:
+  enabled: true
+  interval: 24h
+  ignored: []
+
+schema_version: 28
