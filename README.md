@@ -6,10 +6,15 @@ OpenWRT build for a travel router using the following hardware:
 
 Based on the [RPi5 (bcm27xx/bcm2712)](https://firmware-selector.openwrt.org/?target=bcm27xx%2Fbcm2712&id=rpi-5) build.
 
-## Usage
-Edit packages in [build_image.sh](build_image.sh) and uci config in [uci-defaults.sh](uci-defaults.sh).
+## Configuration
+Config files that can be edited/added, if needed:
+* `config/packages.sh`: extra packages to install
+* `config/imagebuilder.config`: [OpenWRT image builder](https://openwrt.org/docs/guide-user/additional-software/imagebuilder) config
+* `config/uci-defaults.sh`: UCI default settings (run once on first boot)
+* `config/wireguard.env`: (Optional) add Wireguard VPN config
+* `config/ssh_key.pub`: (Optional) add an SSH public key to use for SSH authentication (instead of a password)
 
-Then, run:
+## Usage
 ```sh
 docker build -t openwrt-builder .
 ./run.sh
