@@ -1,12 +1,10 @@
 #!/bin/sh
-# Health monitoring script for travel router
-# Logs status of critical services and connectivity
-# Can be run manually or via cron
+# Health monitoring script for network interfaces + services
 
 LOGFILE="/var/log/router-health.log"
 MAX_LOG_SIZE=102400  # 100KB
 
-# Rotate log if too large
+# Rotate log
 if [ -f "$LOGFILE" ] && [ $(stat -c%s "$LOGFILE") -gt $MAX_LOG_SIZE ]; then
     mv "$LOGFILE" "${LOGFILE}.old"
 fi

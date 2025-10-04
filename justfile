@@ -11,6 +11,6 @@ init:
         && echo "Enter VPN config into config/vpn.conf" && exit 1)
 
 # Build imagebuilder image (if necessary) and OpenWRT image
-build:
+build *args:
     mkdir -p dist
-    docker compose up
+    docker compose up {{args}}

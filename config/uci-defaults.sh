@@ -2,6 +2,11 @@
 # UCI default settings, which runs once on first boot
 # Reference: https://openwrt.org/docs/guide-developer/uci-defaults
 set -e
+
+# Redirect all output to log file
+exec >> /tmp/uci-defaults.log 2>&1
+echo "=== UCI Defaults Script Started: $(date) ==="
+
 test -f /etc/wireguard.env && . /etc/wireguard.env || exit 1
 
 # Set hostname and time
@@ -300,6 +305,11 @@ cat >> /etc/sysupgrade.conf <<'EOF'
 /etc/adguardhome.yaml
 /opt/adguardhome/data/
 EOF
+
+# Copy log to persistent storage before reboot
+mkdir -p /etc/uci-defaults-logs
+cp /tmp/uci-defaults.log /etc/uci-defaults-logs/uci-defaults-$(date +%Y%m%d-%H%M%S).log
+echo "=== UCI Defaults Script Completed: $(date) ==="
 
 # service network restart
 # service dropbear restart
