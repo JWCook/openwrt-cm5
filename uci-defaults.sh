@@ -87,20 +87,28 @@ uci commit travelmate
 # Create WireGuard interface
 uci set network.wg0=interface
 uci set network.wg0.proto='wireguard'
-uci set network.wg0.private_key='REPLACEME'
-uci add_list network.wg0.addresses='REPLACEME'
-uci add_list network.wg0.dns='REPLACEME'
 uci set network.wg0.metric='5'
 
 # Create WireGuard peer
 uci add network wireguard_wg0
-uci set network.@wireguard_wg0[-1].public_key='REPLACEME'
-uci set network.@wireguard_wg0[-1].endpoint_host='REPLACEME'
-uci set network.@wireguard_wg0[-1].endpoint_port='REPLACEME'
 uci set network.@wireguard_wg0[-1].persistent_keepalive='25'
 uci set network.@wireguard_wg0[-1].route_allowed_ips='1'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='0.0.0.0/0'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='::/0'
+
+# Load WireGuard configuration from env file
+if [ -f /etc/wireguard.env ]; then
+    . /etc/wireguard.env
+
+    uci set network.wg0.private_key="$VPN_PRIVATE_KEY"
+    uci add_list network.wg0.addresses="$VPN_ADDRESS"
+    uci add_list network.wg0.dns="$VPN_DNS"
+    uci set network.@wireguard_wg0[-1].public_key="$VPN_PUBLIC_KEY"
+    uci set network.@wireguard_wg0[-1].endpoint_host="$VPN_HOST"
+    uci set network.@wireguard_wg0[-1].endpoint_port="$VPN_PORT"
+
+    rm /etc/wireguard.env
+fi
 
 # Configure WireGuard firewall zone
 uci add firewall zone
