@@ -45,3 +45,16 @@ Manual steps:
                                         │
 [p3] WiFi ──→ Travelmate ──→ trm_wwan ──┘
 ```
+
+## Status
+- [x] Drivers + other packages
+- [x] Basic network interfaces
+- [x] SSH
+- [ ] Wireguard
+- [ ] Travelmate
+- [ ] Adguard
+- [ ] mwan3
+
+### Debug status
+* WRT1: v2 - working on 10.0.8.1 - v2
+* WRT2: v3 - working w/ travelmate wifi connection

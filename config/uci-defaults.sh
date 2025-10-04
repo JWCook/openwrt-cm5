@@ -1,16 +1,24 @@
 #!/bin/sh
 # UCI default settings, which runs once on first boot
 # Reference: https://openwrt.org/docs/guide-developer/uci-defaults
-set -e
 
 # Redirect all output to log file
-mkdir -p /etc/uci-defaults-logs
-exec >> /etc/uci-defaults-logs/uci-defaults.log 2>&1
+mkdir -p /etc/uci-defaults
+exec >> /etc/uci-defaults/log 2>&1
 echo "=== UCI Defaults Script Started: $(date) ==="
 
 # Set hostname and time
 uci set system.@system[0].hostname='travelrouter'
 uci set system.@system[0].timezone='UTC'
+
+# Configure DHCP and DNS
+uci set dhcp.lan.start='100'
+uci set dhcp.lan.limit='150'
+uci set dhcp.lan.leasetime='12h'
+# Disable dnsmasq DNS (AdGuard Home will handle it)
+# uci set dhcp.@dnsmasq[0].port='0'
+# uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
+uci commit dhcp
 
 # Configure NTP
 uci set system.ntp=timeserver
@@ -27,16 +35,14 @@ uci commit system
 echo "dtparam=pciex1" >> /boot/config.txt
 
 # Configure ETH1 as LAN (br-lan bridge)
+uci delete network.@device[0].ports
+uci add_list network.@device[0].ports='eth1'
 uci set network.lan=interface
 uci set network.lan.device='br-lan'
 uci set network.lan.proto='static'
 uci set network.lan.ipaddr='10.8.0.1'
 uci set network.lan.netmask='255.255.255.0'
 uci set network.lan.ip6assign='60'
-
-# Modify existing br-lan bridge to use eth1 instead of eth0
-uci delete network.@device[0].ports
-uci add_list network.@device[0].ports='eth1'
 
 # Configure ETH0 as WAN (backup)
 uci set network.wan=interface
@@ -67,20 +73,24 @@ uci commit network
 
 # Configure built-in WiFi as WAN client
 wifi config
+uci del wireless.default_radio0  # Remove default config (AP mode)
 uci set wireless.radio0.disabled='0'
 uci set wireless.radio0.band='auto'
-uci set wireless.radio0.htmode='VHT80'
+uci set wireless.radio0.htmode='HT40'
 uci set wireless.radio0.country='US'
 uci commit wireless
 
-# Configure DHCP and DNS
-uci set dhcp.lan.start='100'
-uci set dhcp.lan.limit='150'
-uci set dhcp.lan.leasetime='12h'
-# Disable dnsmasq DNS (AdGuard Home will handle it)
-uci set dhcp.@dnsmasq[0].port='0'
-uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
-uci commit dhcp
+# Enable and configure Travelmate
+uci set travelmate.global=travelmate
+uci set travelmate.global.trm_enabled='1'
+uci set travelmate.global.trm_captive='1'
+uci set travelmate.global.trm_netcheck='1'
+uci set travelmate.global.trm_autoadd='0'
+uci set travelmate.global.trm_timeout='60'
+uci set travelmate.global.trm_radio='radio0'
+uci set travelmate.global.trm_iface='trm_wwan'
+# uci set travelmate.global.trm_randomize='1'  # randomize MAC for each connection
+uci commit travelmate
 
 # Configure firewall
 uci delete firewall.@zone[1].network 2>/dev/null || true
@@ -92,166 +102,31 @@ uci commit firewall
 # Configure dropbear: use pubkey-only login if an SSH public key is present
 mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
 if [ -f /etc/dropbear/authorized_keys ]; then
+    echo "SSH pubkey found"
     chmod 600 /etc/dropbear/authorized_keys
-
     uci set dropbear.@dropbear[0].PasswordAuth="0"
     uci set dropbear.@dropbear[0].RootPasswordAuth="0"
     uci set dropbear.@dropbear[0].Port="22"
     uci commit dropbear
+else
+    echo "SSH pubkey not found"
 fi
 
 # Exit early if VPN config is missing
 if test -f /etc/wireguard.env; then
     . /etc/wireguard.env
+    rm /etc/wireguard.env
+    echo "Loaded wireguard config"
 else
     echo "Missing wireguard config"
-    ( sleep 5; reboot ) &
     exit 1
 fi
 
-# Configure mwan3 for multi-WAN failover
-# Interface: trm_wwan (WiFi via Travelmate)
-# More lenient timing for captive portal compatibility
-uci set mwan3.trm_wwan=interface
-uci set mwan3.trm_wwan.enabled='1'
-uci set mwan3.trm_wwan.initial_state='offline'
-uci set mwan3.trm_wwan.family='ipv4'
-uci set mwan3.trm_wwan.track_method='ping'
-uci set mwan3.trm_wwan.track_ip='1.1.1.1 1.0.0.1'
-uci set mwan3.trm_wwan.reliability='1'
-uci set mwan3.trm_wwan.count='1'
-uci set mwan3.trm_wwan.size='56'
-uci set mwan3.trm_wwan.max_ttl='60'
-uci set mwan3.trm_wwan.timeout='4'
-uci set mwan3.trm_wwan.interval='30'
-uci set mwan3.trm_wwan.failure_interval='10'
-uci set mwan3.trm_wwan.recovery_interval='10'
-uci set mwan3.trm_wwan.down='3'
-uci set mwan3.trm_wwan.up='5'
 
-# Interface: usb_wan (Phone USB tethering)
-uci set mwan3.usb_wan=interface
-uci set mwan3.usb_wan.enabled='1'
-uci set mwan3.usb_wan.initial_state='offline'
-uci set mwan3.usb_wan.family='ipv4'
-uci set mwan3.usb_wan.track_method='ping'
-uci set mwan3.usb_wan.track_ip='1.1.1.1 1.0.0.1'
-uci set mwan3.usb_wan.reliability='1'
-uci set mwan3.usb_wan.count='1'
-uci set mwan3.usb_wan.size='56'
-uci set mwan3.usb_wan.max_ttl='60'
-uci set mwan3.usb_wan.timeout='4'
-uci set mwan3.usb_wan.interval='10'
-uci set mwan3.usb_wan.failure_interval='5'
-uci set mwan3.usb_wan.recovery_interval='5'
-uci set mwan3.usb_wan.down='3'
-uci set mwan3.usb_wan.up='3'
 
-# Interface: wan (Ethernet backup)
-uci set mwan3.wan=interface
-uci set mwan3.wan.enabled='1'
-uci set mwan3.wan.initial_state='offline'
-uci set mwan3.wan.family='ipv4'
-uci set mwan3.wan.track_method='ping'
-uci set mwan3.wan.track_ip='1.1.1.1 1.0.0.1'
-uci set mwan3.wan.reliability='1'
-uci set mwan3.wan.count='1'
-uci set mwan3.wan.size='56'
-uci set mwan3.wan.max_ttl='60'
-uci set mwan3.wan.timeout='4'
-uci set mwan3.wan.interval='30'
-uci set mwan3.wan.failure_interval='10'
-uci set mwan3.wan.recovery_interval='10'
-uci set mwan3.wan.down='3'
-uci set mwan3.wan.up='5'
 
-# Interface: wg0 (VPN)
-# Note: VPN endpoint traffic must bypass VPN routing
-uci set mwan3.wg0=interface
-uci set mwan3.wg0.enabled='1'
-uci set mwan3.wg0.initial_state='offline'
-uci set mwan3.wg0.family='ipv4'
-uci set mwan3.wg0.track_method='ping'
-uci set mwan3.wg0.track_ip='1.1.1.1 1.0.0.1'
-uci set mwan3.wg0.reliability='1'
-uci set mwan3.wg0.count='1'
-uci set mwan3.wg0.size='56'
-uci set mwan3.wg0.max_ttl='60'
-uci set mwan3.wg0.timeout='4'
-uci set mwan3.wg0.interval='30'
-uci set mwan3.wg0.failure_interval='10'
-uci set mwan3.wg0.recovery_interval='10'
-uci set mwan3.wg0.down='3'
-uci set mwan3.wg0.up='5'
 
-# Member: wg0 with highest priority (prefer VPN)
-uci set mwan3.wg0_m1_w5=member
-uci set mwan3.wg0_m1_w5.interface='wg0'
-uci set mwan3.wg0_m1_w5.metric='1'
-uci set mwan3.wg0_m1_w5.weight='5'
-
-# Member: wan (Ethernet WAN, highest priority if connected)
-uci set mwan3.wan_m2_w4=member
-uci set mwan3.wan_m2_w4.interface='wan'
-uci set mwan3.wan_m2_w4.metric='2'
-uci set mwan3.wan_m2_w4.weight='4'
-
-# Member: usb_wan (Phone tethering, 2nd priority if connected)
-uci set mwan3.usb_wan_m3_w3=member
-uci set mwan3.usb_wan_m3_w3.interface='usb_wan'
-uci set mwan3.usb_wan_m3_w3.metric='3'
-uci set mwan3.usb_wan_m3_w3.weight='3'
-
-# Member: trm_wwan (WiFi WAN, last priority; use if no ethernet or USB is connected)
-uci set mwan3.trm_wwan_m4_w2=member
-uci set mwan3.trm_wwan_m4_w2.interface='trm_wwan'
-uci set mwan3.trm_wwan_m4_w2.metric='4'
-uci set mwan3.trm_wwan_m4_w2.weight='2'
-
-# Policy: prefer VPN, failover to direct WAN connections
-uci set mwan3.vpn_failover=policy
-uci set mwan3.vpn_failover.last_resort='default'
-uci add_list mwan3.vpn_failover.use_member='wg0_m1_w5'
-uci add_list mwan3.vpn_failover.use_member='wan_m2_w4'
-uci add_list mwan3.vpn_failover.use_member='usb_wan_m3_w3'
-uci add_list mwan3.vpn_failover.use_member='trm_wwan_m4_w2'
-
-# Policy: direct WAN only (for VPN endpoint traffic)
-uci set mwan3.wan_only=policy
-uci set mwan3.wan_only.last_resort='default'
-uci add_list mwan3.wan_only.use_member='wan_m2_w4'
-uci add_list mwan3.wan_only.use_member='usb_wan_m3_w3'
-uci add_list mwan3.wan_only.use_member='trm_wwan_m4_w2'
-
-# Rule: VPN endpoint traffic bypasses VPN (prevent routing loop)
-# This will be configured dynamically when VPN is set up
-uci set mwan3.vpn_endpoint_rule=rule
-uci set mwan3.vpn_endpoint_rule.proto='udp'
-uci set mwan3.vpn_endpoint_rule.use_policy='wan_only'
-uci set mwan3.vpn_endpoint_rule.family='ipv4'
-
-# Rule: all other traffic uses VPN with failover
-uci set mwan3.default_rule=rule
-uci set mwan3.default_rule.dest_ip='0.0.0.0/0'
-uci set mwan3.default_rule.use_policy='vpn_failover'
-uci set mwan3.default_rule.family='ipv4'
-
-# Rule: route VPN endpoint traffic directly (prevent routing loop)
-uci set mwan3.vpn_endpoint_rule.dest_ip="$VPN_HOST"
-uci set mwan3.vpn_endpoint_rule.dest_port="$VPN_PORT"
-
-uci commit mwan3
-
-# Enable and configure Travelmate
-uci set travelmate.global=travelmate
-uci set travelmate.global.trm_enabled='1'
-uci set travelmate.global.trm_captive='1'
-uci set travelmate.global.trm_netcheck='0'
-uci set travelmate.global.trm_autoadd='0'
-uci set travelmate.global.trm_timeout='60'
-uci set travelmate.global.trm_radio='radio0'
-uci set travelmate.global.trm_iface='trm_wwan'
-uci commit travelmate
+########## wireguard ##########
 
 # Create WireGuard interface
 uci set network.wg0=interface
@@ -304,24 +179,17 @@ fi
 
 # Add custom files to backup configuration
 cat >> /etc/sysupgrade.conf <<'EOF'
-# Travelmate WiFi credentials (auto-discovered networks)
 /etc/config/travelmate
-# AdGuard Home settings and statistics
 /etc/adguardhome.yaml
 /opt/adguardhome/data/
 EOF
 
-rm /etc/wireguard.env
-
 echo "=== UCI Defaults Script Completed: $(date) ==="
 
 # Debug: only restart services without full reboot
-# service network restart
-# service dropbear restart
-# service firewall restart
-# service travelmate restart
-
-# Full reboot for PCIe changes to take effect
-( sleep 5; reboot ) &
+/etc/init.d/dropbear restart
+/etc/init.d/firewall restart
+/etc/init.d/network restart
+/etc/init.d/travelmate restart
 
 exit 0
