@@ -49,13 +49,14 @@ if [ -f config/ssh_key.pub ]; then
     chmod 600 files/etc/dropbear/authorized_keys
 fi
 
-
 # Build and relocate images
 make image \
     PROFILE="$PROFILE" \
     PACKAGES="$PACKAGES" \
     FILES="files/"
 
-find bin -type f -name "*.img.gz" -exec mv {} ./dist/ \;
+echo "Files:"; tree files; echo
+
+find bin -print -type f -name "*.img.gz" -exec mv {} ./dist/ \;
 echo "Available images:"
 ls -lh dist

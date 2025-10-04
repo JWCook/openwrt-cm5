@@ -4,7 +4,7 @@
 PACKAGES_DRIVERS="kmod-mt76x2u kmod-r8169 kmod-usb3 kmod-usb2 kmod-usb2-pci kmod-usb-net-rndis"
 
 # LuCI packages
-PACKAGES_LUCI="luci luci-app-firewall luci-app-package-manager luci-light luci-theme-material luci-mod-admin-full luci-mod-network luci-mod-status luci-mod-system luci-proto-ipv6 luci-ssl uhttpd uhttpd-mod-ubus"
+PACKAGES_LUCI="luci luci-app-firewall luci-app-package-manager luci-theme-material luci-mod-admin-full luci-mod-network luci-mod-status luci-mod-system luci-proto-ipv6 luci-ssl uhttpd uhttpd-mod-ubus"
 
 # Other apps
 PACKAGES_APPS="adguardhome ca-bundle ca-certificates wireless-tools iw mwan3 luci-app-mwan3 travelmate luci-app-travelmate wpad-openssl wireguard-tools luci-proto-wireguard kmod-wireguard"

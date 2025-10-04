@@ -4,10 +4,9 @@
 set -e
 
 # Redirect all output to log file
-exec >> /tmp/uci-defaults.log 2>&1
+mkdir -p /etc/uci-defaults-logs
+exec >> /etc/uci-defaults-logs/uci-defaults.log 2>&1
 echo "=== UCI Defaults Script Started: $(date) ==="
-
-test -f /etc/wireguard.env && . /etc/wireguard.env || exit 1
 
 # Set hostname and time
 uci set system.@system[0].hostname='travelrouter'
@@ -17,15 +16,15 @@ uci set system.@system[0].timezone='UTC'
 uci set system.ntp=timeserver
 uci set system.ntp.enabled='1'
 uci set system.ntp.enable_server='0'
+uci del system.ntp.server
 uci add_list system.ntp.server='0.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='1.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='2.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='3.openwrt.pool.ntp.org'
-
 uci commit system
 
 # Required for PCIe RTL8111H ethernet controller (ETH1)
-echo "dtparam=pciex1" >> /boot/firmware/config.txt
+echo "dtparam=pciex1" >> /boot/config.txt
 
 # Configure ETH1 as LAN (br-lan bridge)
 uci set network.lan=interface
@@ -36,7 +35,6 @@ uci set network.lan.netmask='255.255.255.0'
 uci set network.lan.ip6assign='60'
 
 # Modify existing br-lan bridge to use eth1 instead of eth0
-# The bridge already exists in fresh OpenWRT 24.10.3 images
 uci delete network.@device[0].ports
 uci add_list network.@device[0].ports='eth1'
 
@@ -77,11 +75,11 @@ uci commit wireless
 
 # Configure DHCP and DNS
 uci set dhcp.lan.start='100'
-uci set dhcp.lan.limit='151'
+uci set dhcp.lan.limit='150'
 uci set dhcp.lan.leasetime='12h'
-uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
 # Disable dnsmasq DNS (AdGuard Home will handle it)
 uci set dhcp.@dnsmasq[0].port='0'
+uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
 uci commit dhcp
 
 # Configure firewall
@@ -90,6 +88,26 @@ uci add_list firewall.@zone[1].network='wan'
 uci add_list firewall.@zone[1].network='trm_wwan'
 uci add_list firewall.@zone[1].network='usb_wan'
 uci commit firewall
+
+# Configure dropbear: use pubkey-only login if an SSH public key is present
+mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
+if [ -f /etc/dropbear/authorized_keys ]; then
+    chmod 600 /etc/dropbear/authorized_keys
+
+    uci set dropbear.@dropbear[0].PasswordAuth="0"
+    uci set dropbear.@dropbear[0].RootPasswordAuth="0"
+    uci set dropbear.@dropbear[0].Port="22"
+    uci commit dropbear
+fi
+
+# Exit early if VPN config is missing
+if test -f /etc/wireguard.env; then
+    . /etc/wireguard.env
+else
+    echo "Missing wireguard config"
+    ( sleep 5; reboot ) &
+    exit 1
+fi
 
 # Configure mwan3 for multi-WAN failover
 # Interface: trm_wwan (WiFi via Travelmate)
@@ -284,19 +302,6 @@ if [ -f /etc/adguardhome.yaml ]; then
     sed -i "/1\.1\.1\.1/d; /1\.0\.0\.1/d" /etc/adguardhome.yaml
 fi
 
-# Configure pubkey-only login, if an SSH public key is present
-mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
-if [ -f /etc/dropbear/authorized_keys ]; then
-    chmod 600 /etc/dropbear/authorized_keys
-
-    uci set dropbear.@dropbear[0].PasswordAuth="0"
-    uci set dropbear.@dropbear[0].RootPasswordAuth="0"
-    uci set dropbear.@dropbear[0].Port="22"
-    uci commit dropbear
-fi
-
-rm /etc/wireguard.env
-
 # Add custom files to backup configuration
 cat >> /etc/sysupgrade.conf <<'EOF'
 # Travelmate WiFi credentials (auto-discovered networks)
@@ -306,11 +311,11 @@ cat >> /etc/sysupgrade.conf <<'EOF'
 /opt/adguardhome/data/
 EOF
 
-# Copy log to persistent storage before reboot
-mkdir -p /etc/uci-defaults-logs
-cp /tmp/uci-defaults.log /etc/uci-defaults-logs/uci-defaults-$(date +%Y%m%d-%H%M%S).log
+rm /etc/wireguard.env
+
 echo "=== UCI Defaults Script Completed: $(date) ==="
 
+# Debug: only restart services without full reboot
 # service network restart
 # service dropbear restart
 # service firewall restart
