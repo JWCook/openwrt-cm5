@@ -48,6 +48,7 @@ uci set network.lan.ip6assign='60'
 uci set network.wan=interface
 uci set network.wan.device='eth0'
 uci set network.wan.proto='dhcp'
+uci set network.wan.metric='512'
 uci delete network.wan.dns
 uci add_list network.wan.dns='1.1.1.1'
 uci add_list network.wan.dns='1.0.0.1'
@@ -55,6 +56,7 @@ uci add_list network.wan.dns='1.0.0.1'
 # Configure interface for Travelmate
 uci set network.trm_wwan=interface
 uci set network.trm_wwan.proto='dhcp'
+uci set network.trm_wwan.metric='2048'
 uci set network.trm_wwan.peerdns='0'
 uci delete network.trm_wwan.dns
 uci add_list network.trm_wwan.dns='1.1.1.1'
@@ -64,7 +66,7 @@ uci add_list network.trm_wwan.dns='1.0.0.1'
 uci set network.usb_wan=interface
 uci set network.usb_wan.device='usb0'
 uci set network.usb_wan.proto='dhcp'
-uci set network.usb_wan.metric='10'
+uci set network.usb_wan.metric='1024'
 uci delete network.usb_wan.dns
 uci add_list network.usb_wan.dns='1.1.1.1'
 uci add_list network.usb_wan.dns='1.0.0.1'
@@ -143,6 +145,17 @@ fi
 
 ########## mwan3 ##########
 
+# Delete default mwan3 configuration
+while uci -q delete mwan3.@interface[0]; do :; done
+while uci -q delete mwan3.@member[0]; do :; done
+while uci -q delete mwan3.@policy[0]; do :; done
+while uci -q delete mwan3.@rule[0]; do :; done
+
+# Enable mwan3 globally
+uci set mwan3.globals=globals
+uci set mwan3.globals.enabled='1'
+uci set mwan3.globals.local_source='lan'
+
 # Configure mwan3 for multi-WAN failover
 # Interface: trm_wwan (WiFi via Travelmate)
 uci set mwan3.trm_wwan=interface
@@ -155,12 +168,12 @@ uci set mwan3.trm_wwan.reliability='1'
 uci set mwan3.trm_wwan.count='1'
 uci set mwan3.trm_wwan.size='56'
 uci set mwan3.trm_wwan.max_ttl='60'
-uci set mwan3.trm_wwan.timeout='4'
-uci set mwan3.trm_wwan.interval='30'
-uci set mwan3.trm_wwan.failure_interval='10'
-uci set mwan3.trm_wwan.recovery_interval='10'
-uci set mwan3.trm_wwan.down='3'
-uci set mwan3.trm_wwan.up='5'
+uci set mwan3.trm_wwan.timeout='10'
+uci set mwan3.trm_wwan.interval='10'
+uci set mwan3.trm_wwan.failure_interval='5'
+uci set mwan3.trm_wwan.recovery_interval='5'
+uci set mwan3.trm_wwan.down='5'
+uci set mwan3.trm_wwan.up='2'
 
 # Interface: usb_wan (Phone USB tethering)
 uci set mwan3.usb_wan=interface
@@ -191,12 +204,12 @@ uci set mwan3.wan.reliability='1'
 uci set mwan3.wan.count='1'
 uci set mwan3.wan.size='56'
 uci set mwan3.wan.max_ttl='60'
-uci set mwan3.wan.timeout='4'
-uci set mwan3.wan.interval='30'
-uci set mwan3.wan.failure_interval='10'
-uci set mwan3.wan.recovery_interval='10'
-uci set mwan3.wan.down='3'
-uci set mwan3.wan.up='5'
+uci set mwan3.wan.timeout='10'
+uci set mwan3.wan.interval='10'
+uci set mwan3.wan.failure_interval='5'
+uci set mwan3.wan.recovery_interval='5'
+uci set mwan3.wan.down='5'
+uci set mwan3.wan.up='2'
 
 # Interface: wg0 (VPN)
 # Note: VPN endpoint traffic must bypass VPN routing
@@ -205,17 +218,17 @@ uci set mwan3.wg0.enabled='1'
 uci set mwan3.wg0.initial_state='offline'
 uci set mwan3.wg0.family='ipv4'
 uci set mwan3.wg0.track_method='ping'
-uci set mwan3.wg0.track_ip='1.1.1.1 1.0.0.1'
+uci set mwan3.wg0.track_ip="$VPN_DNS"
 uci set mwan3.wg0.reliability='1'
 uci set mwan3.wg0.count='1'
 uci set mwan3.wg0.size='56'
 uci set mwan3.wg0.max_ttl='60'
-uci set mwan3.wg0.timeout='4'
-uci set mwan3.wg0.interval='30'
-uci set mwan3.wg0.failure_interval='10'
-uci set mwan3.wg0.recovery_interval='10'
-uci set mwan3.wg0.down='3'
-uci set mwan3.wg0.up='5'
+uci set mwan3.wg0.timeout='10'
+uci set mwan3.wg0.interval='10'
+uci set mwan3.wg0.failure_interval='5'
+uci set mwan3.wg0.recovery_interval='5'
+uci set mwan3.wg0.down='5'
+uci set mwan3.wg0.up='2'
 
 # Member: wg0 with highest priority (prefer VPN)
 uci set mwan3.wg0_m1_w5=member
@@ -334,10 +347,13 @@ EOF
 
 echo "=== UCI Defaults Script Completed: $(date) ==="
 
-# Only restart services without full reboot
+# Enable and restart services
 /etc/init.d/dropbear restart
 /etc/init.d/firewall restart
 /etc/init.d/network restart
+/etc/init.d/mwan3 enable
+/etc/init.d/mwan3 restart
+/etc/init.d/travelmate enable
 /etc/init.d/travelmate restart
 
 exit 0
