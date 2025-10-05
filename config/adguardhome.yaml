@@ -6,7 +6,7 @@ http:
 
 users:
   - name: admin
-    password: $2a$10$YKz2lUHIeIZ8vWmYlhqLGOKFqLdN8QdZ8TqnQNXHGxKZhLjN5GHNO  # "changeme" - change via web UI
+    password: $2b$10$FrKu0YMMRPnLjqVAB2eZaelhUKkXTqd/nrvg0O7jWfpF3BM69SRe. # "changeme" (bcrypt); change via web UI
 
 dns:
   bind_hosts:

@@ -15,9 +15,9 @@ uci set system.@system[0].timezone='UTC'
 uci set dhcp.lan.start='100'
 uci set dhcp.lan.limit='150'
 uci set dhcp.lan.leasetime='12h'
-# Disable dnsmasq DNS (AdGuard Home will handle it)
-# uci set dhcp.@dnsmasq[0].port='0'
-# uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
+# Disable dnsmasq DNS and point to AdGuard
+uci set dhcp.@dnsmasq[0].port='0'
+uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
 uci commit dhcp
 
 # Configure NTP
@@ -347,9 +347,10 @@ fi
 
 # Add custom files to backup configuration
 cat >> /etc/sysupgrade.conf <<'EOF'
-/etc/config/travelmate
 /etc/adguardhome.yaml
-/opt/adguardhome/data/
+/etc/config/adguardhome
+/etc/config/travelmate
+/var/lib/adguardhome/data/
 EOF
 
 echo "=== UCI defaults completed: $(date) ==="
