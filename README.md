@@ -46,8 +46,15 @@ Additional config files that can be edited/added, if needed:
 
 ### Build
 ```sh
-just init   # Check/init config
-just build  # Build OpenWRT image
+just init            # Check/init config
+just build           # Build OpenWRT image
+```
+
+### Flash
+```sh
+just find-sd         # Find device name of attached SD card (by model name if available)
+just expand /dev/sdX # Expand built image to use remaining storage space on SD card
+just flash  /dev/sdX # Flash built + expanded image to SD card
 ```
 
 ### Post-installation
