@@ -6,3 +6,4 @@ dist/
 *.tmp
 ssh_key.pub
 vpn.conf
+wifi.env

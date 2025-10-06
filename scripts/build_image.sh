@@ -49,6 +49,11 @@ if [ -f config/ssh_key.pub ]; then
     chmod 600 files/etc/dropbear/authorized_keys
 fi
 
+# Add wifi config (optional)
+if [ -f config/wifi.env ]; then
+    cp config/wifi.env files/etc/wifi.env
+fi
+
 # Build and relocate images
 make image \
     PROFILE="$PROFILE" \
