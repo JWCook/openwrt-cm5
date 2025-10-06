@@ -7,6 +7,16 @@ mkdir -p /etc/uci-defaults
 exec >> /etc/uci-defaults/log 2>&1
 echo "=== UCI defaults started: $(date) ==="
 
+# Load configuration
+if test -f /etc/config.env; then
+    . /etc/config.env
+    rm /etc/config.env
+    echo "Loaded config"
+else
+    echo "Missing config.env"
+    exit 1
+fi
+
 # Set hostname and time
 uci set system.@system[0].hostname='travelrouter'
 uci set system.@system[0].timezone='UTC'
@@ -93,9 +103,8 @@ uci set travelmate.global.trm_radio='radio0'
 uci set travelmate.global.trm_iface='trm_wwan'
 # uci set travelmate.global.trm_randomize='1'  # randomize MAC for each connection
 
-# Add default station to travelmate (if wifi.env is present)
-if test -f /etc/wifi.env; then
-    . /etc/wifi.env
+# Add default station to travelmate (if wifi configured)
+if [ -n "$WIFI_SSID" ]; then
     echo "Loaded wifi config - configuring default network"
 
     uci add travelmate uplink
@@ -115,8 +124,6 @@ if test -f /etc/wifi.env; then
     uci set wireless.trm_uplink2.key="$WIFI_PW"
     uci set wireless.trm_uplink2.disabled='0'
     uci commit wireless
-
-    rm /etc/wifi.env
 fi
 
 # Configure firewall
@@ -131,22 +138,13 @@ mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
 if [ -f /etc/dropbear/authorized_keys ]; then
     echo "SSH pubkey found"
     chmod 600 /etc/dropbear/authorized_keys
+
     uci set dropbear.@dropbear[0].PasswordAuth="0"
     uci set dropbear.@dropbear[0].RootPasswordAuth="0"
-    uci set dropbear.@dropbear[0].Port="22"
+    uci set dropbear.@dropbear[0].Port="$SSH_PORT"
     uci commit dropbear
 else
     echo "SSH pubkey not found"
-fi
-
-# Exit early if VPN config is missing
-if test -f /etc/wireguard.env; then
-    . /etc/wireguard.env
-    rm /etc/wireguard.env
-    echo "Loaded wireguard config"
-else
-    echo "Missing wireguard config"
-    exit 1
 fi
 
 

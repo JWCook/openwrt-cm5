@@ -1,0 +1,92 @@
+# OpenWRT Configuration
+# Copy this file to config.yml and fill in your values
+
+# Required: Wireguard VPN config
+vpn:
+  interface:
+    private_key: "privkey"
+    address: "10.2.0.2/32"
+    dns: "10.2.0.1"
+  peer:
+    public_key: "pubkey"
+    endpoint: "vpn.example.com:51820"
+
+# Optional: Dropbear SSH config
+ssh:
+  pubkey: "pubkey"
+  port: 22
+
+# Optional: default wifi network to configure
+wifi:
+  ssid: "ssid"
+  password: "pass"
+  # Reference: https://openwrt.org/docs/guide-user/network/wifi/basic#encryption_modes
+  encryption: psk2
+
+# Packages to install/remove
+packages:
+  add:
+    # USB drivers + WiFi drivers + network tools
+    - kmod-mt76x2u
+    - kmod-r8169
+    - kmod-usb3
+    - kmod-usb2
+    - kmod-usb2-pci
+    - kmod-usb-net-rndis
+
+    # General LuCI packages
+    - luci
+    - luci-app-firewall
+    - luci-app-package-manager
+    - luci-mod-admin-full
+    - luci-mod-network
+    - luci-mod-status
+    - luci-mod-system
+    - luci-proto-ipv6
+    - luci-ssl
+    - luci-theme-material
+    - uhttpd
+    - uhttpd-mod-ubus
+
+    # Additional applications/services
+    - adguardhome
+    - mwan3
+    - luci-app-mwan3
+    - sqm-scripts
+    - luci-app-sqm
+    - travelmate
+    - luci-app-travelmate
+    - wireguard-tools
+    - luci-proto-wireguard
+    - kmod-wireguard
+
+    # Misc wireless/security networking tools
+    - ca-bundle
+    - ca-certificates
+    - iw
+    - wireless-tools
+    - wpad-openssl
+
+    # CLI utils for admin/setup/testing convenience (not required for router operation)
+    - curl
+    - fish
+    - htop
+    - jq
+    - pv
+    - rsync
+    - shadow
+    - tmux
+    - vim-full
+    - wget
+    - xz
+
+  # Conflicting packages to remove from default image
+  remove:
+    - wpad-basic-mbedtls
+
+# OpenWRT imagebuilder options
+imagebuilder:
+  CONFIG_TARGET_ROOTFS_EXT4FS: n  # Skip building ext4 images
+  CONFIG_TARGET_ROOTFS_SQUASHFS: y
+  CONFIG_TARGET_ROOTFS_PARTSIZE: 150  # In MB
+  CONFIG_BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY: y

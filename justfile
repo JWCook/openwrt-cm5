@@ -2,18 +2,10 @@ default:
     @just --choose
 
 all:
-    @just init clean build
+    @just clean build
 
 clean:
     rm -rf dist
-
-# Initialize config files
-init:
-    test -f config/ssh_key.pub || ssh-keygen -t rsa -f config/ssh_key -N "" -q
-    test -f config/vpn.conf     || (cp config/vpn.conf.example config/vpn.conf \
-        && echo "Enter VPN config into config/vpn.conf" && exit 1)
-    test -f config/wifi.env     || (cp config/wifi.env.example config/wifi.env \
-        && echo "Enter WiFi config into config/wifi.conf" && exit 1)
 
 # Build imagebuilder image (if necessary) and OpenWRT image
 build *args:

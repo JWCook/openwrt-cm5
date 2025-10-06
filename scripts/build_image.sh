@@ -4,10 +4,14 @@ set -e
 cd /builder/imagebuilder
 PROFILE="rpi-5"
 
-# Load and combine packages
-source config/packages.sh
-PACKAGES_REMOVE=$(echo "$PACKAGES_REMOVE" | sed 's/\S\+/-&/g')
-PACKAGES_ADD=$(echo $PACKAGES_ADD | sed 's/\s+/ /g')
+if ! test -f config/config.yml; then
+    echo "Configuration file missing; add to config/config.yml"
+    exit 1
+fi
+
+# Parse packages from config
+PACKAGES_ADD=$(yq -r '.packages.add[]' config/config.yml | tr '\n' ' ')
+PACKAGES_REMOVE=$(yq -r '.packages.remove[]' config/config.yml | sed 's/^/-/' | tr '\n' ' ')
 PACKAGES="$PACKAGES_REMOVE $PACKAGES_ADD"
 echo "Package changes: $PACKAGES"
 echo ""
@@ -18,43 +22,41 @@ cp config/adguardhome.yaml files/etc/adguardhome.yaml
 mkdir -p files/usr/local/bin
 cp user-scripts/healthcheck.sh files/usr/local/bin/router-health
 chmod +x files/usr/local/bin/router-health
-cat config/imagebuilder.config >> .config
 
-if ! test -f config/vpn.conf; then
-    echo "Wireguard VPN config missing; add to config/vpn.conf"
-    exit 1
-fi
-
-# Convert wireguard config to an env file
-awk '
-/^PrivateKey/ { print "VPN_PRIVATE_KEY=" $3 }
-/^Address/ { print "VPN_ADDRESS=" $3 }
-/^DNS/ { print "VPN_DNS=" $3 }
-/^PublicKey/ { print "VPN_PUBLIC_KEY=" $3 }
-/^Endpoint/ {
-    split($3, parts, ":")
-    print "VPN_HOST=" parts[1]
-    print "VPN_PORT=" parts[2]
+function yqr() {
+    yq -r "$1" config/config.yml
 }
-' config/vpn.conf > files/etc/wireguard.env
 
-# Validate wireguard config
-if ! grep -qE '^VPN_(PRIVATE_KEY|ADDRESS|DNS|PUBLIC_KEY|HOST|PORT)=.+$' files/etc/wireguard.env | \
-   [ $(grep -cE '^VPN_(PRIVATE_KEY|ADDRESS|DNS|PUBLIC_KEY|HOST|PORT)=' files/etc/wireguard.env) -eq 6 ]; then
-    echo "ERROR: Invalid WireGuard config" && exit 1
-fi
+# Merge imagebuilder config options
+yqr '.imagebuilder | to_entries | .[] | "\(.key)=\(.value)"' >> user.config
+awk -F= '!/^#/ && /=/ {a[$1]=$0} END {for (k in a) print a[k]}' .config user.config > merged.config
+mv merged.config .config
+# debug:
+# sort .config > config/merged.config
 
-# Add SSH pubkey (optional)
-if [ -f config/ssh_key.pub ]; then
+# Add SSH public key if configured
+SSH_PUBKEY=$(yq -r '.ssh.pubkey // ""' config/config.yml)
+if [ -n "$SSH_PUBKEY" ] && [ "$SSH_PUBKEY" != "null" ]; then
     mkdir -p files/etc/dropbear
-    cp config/ssh_key.pub files/etc/dropbear/authorized_keys
+    echo "$SSH_PUBKEY" > files/etc/dropbear/authorized_keys
     chmod 600 files/etc/dropbear/authorized_keys
 fi
 
-# Add wifi config (optional)
-if [ -f config/wifi.env ]; then
-    cp config/wifi.env files/etc/wifi.env
-fi
+# As a mother bird feeds its chicks a slurry of partially digested arthropods,
+# So this script shall feed uci-defaults a more easily digestible .env file
+cat > files/etc/config.env <<EOF
+# VPN config (required)
+SSH_PORT=$(         yqr '.ssh.port')
+VPN_PRIVATE_KEY=$(  yqr '.vpn.interface.private_key')
+VPN_ADDRESS=$(      yqr '.vpn.interface.address')
+VPN_DNS=$(          yqr '.vpn.interface.dns')
+VPN_PUBLIC_KEY=$(   yqr '.vpn.peer.public_key')
+VPN_HOST=$(         yqr '.vpn.peer.endpoint' | cut -d: -f1)
+VPN_PORT=$(         yqr '.vpn.peer.endpoint' | cut -d: -f2)
+WIFI_SSID=$(        yqr '.wifi.ssid')
+WIFI_PW=$(          yqr '.wifi.password')
+WIFI_ENCRYPTION=$(  yqr '.wifi.encryption')
+EOF
 
 # Build and relocate images
 make image \

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     wget \
     xsltproc \
+    yq \
     zlib1g-dev \
     zstd \
     && rm -rf /var/lib/apt/lists/*
