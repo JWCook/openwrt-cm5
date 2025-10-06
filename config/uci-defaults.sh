@@ -296,6 +296,50 @@ uci set mwan3.vpn_endpoint_rule.dest_port="$VPN_PORT"
 uci commit mwan3
 
 
+########## sqm ##########
+
+# Configure SQM for bufferbloat control on WAN interfaces
+# Note: Adjust based on actual bandwidth.
+
+# SQM for WiFi WAN (trm_wwan): typical 5-40 Mbps Tx / 3-20 Mbps Rx
+uci add sqm queue
+uci set sqm.@queue[-1].enabled='0'
+uci set sqm.@queue[-1].interface='trm_wwan'
+uci set sqm.@queue[-1].download='5000'  # kbps (conservative)
+uci set sqm.@queue[-1].upload='3000'
+uci set sqm.@queue[-1].qdisc='cake'
+uci set sqm.@queue[-1].script='piece_of_cake.qos'
+uci set sqm.@queue[-1].linklayer='none'
+uci set sqm.@queue[-1].ingress_ecn='ECN'
+uci set sqm.@queue[-1].egress_ecn='ECN'
+
+# SQM for Ethernet WAN: typical 10-100 Mbps Rx / 10-50 Mbps Tx
+uci add sqm queue
+uci set sqm.@queue[-1].enabled='0'
+uci set sqm.@queue[-1].interface='wan'
+uci set sqm.@queue[-1].download='15000'
+uci set sqm.@queue[-1].upload='8000'
+uci set sqm.@queue[-1].qdisc='cake'
+uci set sqm.@queue[-1].script='piece_of_cake.qos'
+uci set sqm.@queue[-1].linklayer='none'
+uci set sqm.@queue[-1].ingress_ecn='ECN'
+uci set sqm.@queue[-1].egress_ecn='ECN'
+
+# SQM for USB tethering: typical 4G LTE 10-80 Mbps Rx / 5-15 Mbps Tx
+uci add sqm queue
+uci set sqm.@queue[-1].enabled='0'
+uci set sqm.@queue[-1].interface='usb_wan'
+uci set sqm.@queue[-1].download='12000'
+uci set sqm.@queue[-1].upload='8000'
+uci set sqm.@queue[-1].qdisc='cake'
+uci set sqm.@queue[-1].script='piece_of_cake.qos'
+uci set sqm.@queue[-1].linklayer='none'
+uci set sqm.@queue[-1].ingress_ecn='ECN'
+uci set sqm.@queue[-1].egress_ecn='ECN'
+
+uci commit sqm
+
+
 ########## wireguard ##########
 
 # Create WireGuard interface
@@ -361,6 +405,8 @@ echo "=== UCI defaults completed: $(date) ==="
 /etc/init.d/network restart
 /etc/init.d/mwan3 enable
 /etc/init.d/mwan3 restart
+/etc/init.d/sqm enable
+/etc/init.d/sqm restart
 /etc/init.d/travelmate enable
 /etc/init.d/travelmate restart
 

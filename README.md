@@ -7,12 +7,13 @@ OpenWRT build for a travel router using the following hardware:
 Based on the [RPi5 (bcm27xx/bcm2712)](https://firmware-selector.openwrt.org/?target=bcm27xx%2Fbcm2712&id=rpi-5) build.
 
 ## Features
-The goal of this setup is to combine the following features, for use mainly with hotel WiFi and other public networks:
+This setup is tailored for my own uses, but may be useful for someone else wanting to accomplish something similar. It combines the following features, for use mainly with hotel WiFi and other public networks:
 * Captive portal handling ([travelmate](https://openwrt.org/docs/guide-user/network/wifi/wifiextenders/travelmate))
 * Android phone USB tethering support
-* Automatic failover from ethernet → USB tether → WiFi ([mwan3](https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3))
+* Multi-WAN utomatic failover from ethernet → USB tether → WiFi ([mwan3](https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3))
 * Ad/tracker blocking ([AdGuard Home](https://adguard.com/en/adguard-home/overview.html))
 * VPN ([WireGuard](https://openwrt.org/docs/guide-user/services/vpn/wireguard/client?s%5B%5D=wireguard))
+* QoS and bufferbloat mitigation ([SQM](https://openwrt.org/docs/guide-user/network/traffic-shaping/sqm))
 
 ### Network diagram
 ```
@@ -53,3 +54,7 @@ just build  # Build OpenWRT image
 Manual steps:
 * Set root password
 * Change adguard password (default user: admin | pass: changeme)
+* (Optional) For QoS / bufferbloat mitigation:
+  * Run a [bufferbloat test](https://www.waveform.com/tools/bufferbloat)
+  * Enable SQM (Network -> SQM QoS)
+  * Set SQM speeds for the current network (85-95% of measured speed)
