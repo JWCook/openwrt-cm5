@@ -2,7 +2,10 @@ default:
     @just --choose
 
 all:
-    @just init build
+    @just init clean build
+
+clean:
+    rm -rf dist
 
 # Initialize config files
 init:
@@ -16,3 +19,14 @@ init:
 build *args:
     mkdir -p dist
     docker compose up {{args}}
+
+# Expand image with an additional storage partition
+expand:
+    ./scripts/expand_img.sh
+
+# Flash a built image to an SD card
+flash sd_device:
+    @IMAGE="$(ls dist/openwrt-*-squashfs-factory.img)" \
+    && echo "Flashing $IMAGE to {{sd_device}}" \
+    && sudo dd if="$IMAGE" of={{sd_device}} bs=4M status=progress
+    sync
