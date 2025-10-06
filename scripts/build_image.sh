@@ -6,7 +6,9 @@ PROFILE="rpi-5"
 
 # Load and combine packages
 source config/packages.sh
-PACKAGES="$(echo "$PACKAGES_REMOVE" | sed 's/\S\+/-&/g') $PACKAGES_ADD"
+PACKAGES_REMOVE=$(echo "$PACKAGES_REMOVE" | sed 's/\S\+/-&/g')
+PACKAGES_ADD=$(echo $PACKAGES_ADD | sed 's/\s+/ /g')
+PACKAGES="$PACKAGES_REMOVE $PACKAGES_ADD"
 echo "Package changes: $PACKAGES"
 echo ""
 
