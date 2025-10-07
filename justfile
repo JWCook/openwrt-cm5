@@ -1,5 +1,5 @@
 default:
-    @just --choose
+    @just --list
 
 all:
     @just clean build
@@ -33,12 +33,19 @@ find-sd search='MicroSD':
 expand sd_device:
     ./scripts/expand_image.sh {{sd_device}}
 
-# Flash a built and expanded image to an SD card
-flash sd_device:
+# Flash a built image to an SD card
+flash sd_device='/dev/sdX' image='dist/openwrt*.img' wipe='':
     #!/bin/bash
-    test -f dist/openwrt*.img || { echo "Built image not found"; exit 1; }
+    test -f {{image}} || { echo "Image {{image}} not found"; exit 1; }
     test -b {{sd_device}} || { echo "Device {{sd_device}} not attached"; exit 1; }
-    IMAGE="$(ls dist/*.img)"
-    echo "Flashing $IMAGE to {{sd_device}}"
-    sudo dd if="$IMAGE" of={{sd_device}} bs=4M status=progress
+    image_file="$(ls {{image}})"  # resolve globs
+
+    if [ "{{wipe}}" = "--wipe" ]; then
+        echo "Wiping {{sd_device}}"  # To get rid of haunted partitions
+        sudo wipefs -a {{sd_device}}
+        sudo dd if=/dev/zero of={{sd_device}} bs=1M status=progress
+    fi
+
+    echo "Flashing $image_file to {{sd_device}}"
+    sudo dd if="$image_file" of={{sd_device}} bs=4M status=progress
     sync
