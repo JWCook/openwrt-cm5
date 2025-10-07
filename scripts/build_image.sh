@@ -18,6 +18,7 @@ echo ""
 
 # Copy config files
 cp config/uci-defaults.sh files/etc/uci-defaults/99-custom-config
+cp scripts/mount_data.sh files/etc/uci-defaults/90-mount-data
 cp config/adguardhome.yaml files/etc/adguardhome.yaml
 mkdir -p files/usr/local/bin
 cp user-scripts/healthcheck.sh files/usr/local/bin/router-health

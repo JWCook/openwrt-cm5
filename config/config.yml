@@ -26,7 +26,8 @@ wifi:
 # Packages to install/remove
 packages:
   add:
-    # USB drivers + WiFi drivers + network tools
+    # USB/WiFi drivers
+    - block-mount
     - kmod-mt76x2u
     - kmod-r8169
     - kmod-usb3
