@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - OPENWRT_VERSION=24.10.3
+        - OPENWRT_VERSION=25.12.2
         - TARGET=bcm27xx
         - SUBTARGET=bcm2712
     image: openwrt-builder
