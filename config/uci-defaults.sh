@@ -122,6 +122,9 @@ uci set travelmate.global.trm_autoadd='0'
 uci set travelmate.global.trm_timeout='60'
 uci set travelmate.global.trm_radio='radio0'
 uci set travelmate.global.trm_iface='trm_wwan'
+uci set travelmate.global.trm_vpn='1'
+uci set travelmate.global.trm_stdvpnservice='wireguard'
+uci set travelmate.global.trm_stdvpniface='wg0'
 # uci set travelmate.global.trm_randomize='1'  # randomize MAC for each connection
 
 # Add default station to travelmate (if wifi configured)
@@ -134,16 +137,19 @@ if [ -n "$WIFI_SSID" ]; then
     uci set travelmate.@uplink[-1].ssid="$WIFI_SSID"
     uci set travelmate.@uplink[-1].con_start_expiry='0'
     uci set travelmate.@uplink[-1].con_end_expiry='0'
+    uci set travelmate.@uplink[-1].vpn='1'
+    uci set travelmate.@uplink[-1].vpnservice='wireguard'
+    uci set travelmate.@uplink[-1].vpniface='wg0'
     uci commit travelmate
 
-    uci set wireless.trm_uplink2=wifi-iface
-    uci set wireless.trm_uplink2.device='radio0'
-    uci set wireless.trm_uplink2.mode='sta'
-    uci set wireless.trm_uplink2.network='trm_wwan'
-    uci set wireless.trm_uplink2.ssid="$WIFI_SSID"
-    uci set wireless.trm_uplink2.encryption="$WIFI_ENCRYPTION"
-    uci set wireless.trm_uplink2.key="$WIFI_PW"
-    uci set wireless.trm_uplink2.disabled='0'
+    uci set wireless.trm_uplink1=wifi-iface
+    uci set wireless.trm_uplink1.device='radio0'
+    uci set wireless.trm_uplink1.mode='sta'
+    uci set wireless.trm_uplink1.network='trm_wwan'
+    uci set wireless.trm_uplink1.ssid="$WIFI_SSID"
+    uci set wireless.trm_uplink1.encryption="$WIFI_ENCRYPTION"
+    uci set wireless.trm_uplink1.key="$WIFI_PW"
+    uci set wireless.trm_uplink1.disabled='0'
     uci commit wireless
 fi
 
