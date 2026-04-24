@@ -17,6 +17,9 @@ else
     exit 1
 fi
 
+
+########## system ##########
+
 # Set hostname and time
 uci set system.@system[0].hostname='travelrouter'
 uci set system.@system[0].timezone='UTC'
@@ -48,6 +51,16 @@ uci add_list system.ntp.server='1.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='2.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='3.openwrt.pool.ntp.org'
 uci commit system
+
+# Increase UDP buffer
+echo "net.core.rmem_max=7500000
+net.core.wmem_max=7500000
+net.core.rmem_default=7500000
+net.core.wmem_default=7500000" >> /etc/sysctl.conf
+sysctl -p
+
+
+########## interfaces ##########
 
 # Required for PCIe RTL8111H ethernet controller (ETH1)
 echo "dtparam=pciex1" >> /boot/config.txt
@@ -133,6 +146,9 @@ if [ -n "$WIFI_SSID" ]; then
     uci set wireless.trm_uplink2.disabled='0'
     uci commit wireless
 fi
+
+
+########## firewall + sshd ##########
 
 # Configure firewall
 uci delete firewall.@zone[1].network 2>/dev/null || true
