@@ -80,6 +80,7 @@ uci set network.wan=interface
 uci set network.wan.device='eth0'
 uci set network.wan.proto='dhcp'
 uci set network.wan.metric='512'
+uci set network.wan.peerdns='0'
 uci delete network.wan.dns
 uci add_list network.wan.dns='1.1.1.1'
 uci add_list network.wan.dns='1.0.0.1'
@@ -88,16 +89,15 @@ uci add_list network.wan.dns='1.0.0.1'
 uci set network.trm_wwan=interface
 uci set network.trm_wwan.proto='dhcp'
 uci set network.trm_wwan.metric='2048'
-uci set network.trm_wwan.peerdns='0'
-uci delete network.trm_wwan.dns
-uci add_list network.trm_wwan.dns='1.1.1.1'
-uci add_list network.trm_wwan.dns='1.0.0.1'
+# Allow DHCP DNS to reach captive portal page
+uci set network.trm_wwan.peerdns='1'
 
 # Configure USB tethering interface (Android)
 uci set network.usb_wan=interface
 uci set network.usb_wan.device='usb0'
 uci set network.usb_wan.proto='dhcp'
 uci set network.usb_wan.metric='1024'
+uci set network.usb_wan.peerdns='0'
 uci delete network.usb_wan.dns
 uci add_list network.usb_wan.dns='1.1.1.1'
 uci add_list network.usb_wan.dns='1.0.0.1'
@@ -117,7 +117,8 @@ uci commit wireless
 uci set travelmate.global=travelmate
 uci set travelmate.global.trm_enabled='1'
 uci set travelmate.global.trm_captive='1'
-uci set travelmate.global.trm_netcheck='1'
+# Optionally set to 1; may cause a circular dependency in some cases
+uci set travelmate.global.trm_netcheck='0'
 uci set travelmate.global.trm_autoadd='0'
 uci set travelmate.global.trm_timeout='60'
 uci set travelmate.global.trm_radio='radio0'
@@ -125,6 +126,7 @@ uci set travelmate.global.trm_iface='trm_wwan'
 uci set travelmate.global.trm_vpn='1'
 uci set travelmate.global.trm_stdvpnservice='wireguard'
 uci set travelmate.global.trm_stdvpniface='wg0'
+# uci set travelmate.global.trm_debug='1'  # enable debug logs
 # uci set travelmate.global.trm_randomize='1'  # randomize MAC for each connection
 
 # Add default station to travelmate (if configured)
