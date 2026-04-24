@@ -6,7 +6,9 @@ vpn:
   interface:
     private_key: "privkey"
     address: "10.2.0.2/32"
+    address_v6: "2a07:b944::2:2/128"  # optional
     dns: "10.2.0.1"
+    dns_v6: "2a07:b944::2:1"  # optional
   peer:
     public_key: "pubkey"
     endpoint: "vpn.example.com:51820"

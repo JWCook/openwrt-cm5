@@ -369,7 +369,9 @@ uci set network.wg0.trm_vpn='1'
 uci set network.wg0.trm_vpnservice='wireguard'
 uci set network.wg0.private_key="$VPN_PRIVATE_KEY"
 uci add_list network.wg0.addresses="$VPN_ADDRESS"
+[ -n "$VPN_ADDRESS_V6" ] && uci add_list network.wg0.addresses="$VPN_ADDRESS_V6"
 uci add_list network.wg0.dns="$VPN_DNS"
+[ -n "$VPN_DNS_V6" ] && uci add_list network.wg0.dns="$VPN_DNS_V6"
 
 # Create WireGuard peer
 uci add network wireguard_wg0
