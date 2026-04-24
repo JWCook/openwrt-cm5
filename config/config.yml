@@ -16,12 +16,20 @@ ssh:
   pubkey: "pubkey"
   port: 22
 
-# Optional: default wifi network to configure
+# Optional: wifi networks to configure
 wifi:
-  ssid: "ssid"
-  password: "pass"
-  # Reference: https://openwrt.org/docs/guide-user/network/wifi/basic#encryption_modes
-  encryption: psk2
+  # Uplink: WAN client connection via Travelmate
+  uplink:
+    ssid: "ssid"
+    password: "pass"
+    # Reference: https://openwrt.org/docs/guide-user/network/wifi/basic#encryption_modes
+    encryption: psk2
+
+  # AP: LAN access point on radio1 (optional)
+  ap:
+    ssid: "ssid"
+    password: "pass"
+    encryption: psk2
 
 # Packages to install/remove
 packages:

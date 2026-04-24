@@ -47,16 +47,19 @@ fi
 # So this script shall feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
 # VPN config (required)
-SSH_PORT=$(         yqr '.ssh.port')
-VPN_PRIVATE_KEY=$(  yqr '.vpn.interface.private_key')
-VPN_ADDRESS=$(      yqr '.vpn.interface.address')
-VPN_DNS=$(          yqr '.vpn.interface.dns')
-VPN_PUBLIC_KEY=$(   yqr '.vpn.peer.public_key')
-VPN_HOST=$(         yqr '.vpn.peer.endpoint' | cut -d: -f1)
-VPN_PORT=$(         yqr '.vpn.peer.endpoint' | cut -d: -f2)
-WIFI_SSID=$(        yqr '.wifi.ssid')
-WIFI_PW=$(          yqr '.wifi.password')
-WIFI_ENCRYPTION=$(  yqr '.wifi.encryption')
+SSH_PORT=$(                 yqr '.ssh.port')
+VPN_PRIVATE_KEY=$(          yqr '.vpn.interface.private_key')
+VPN_ADDRESS=$(              yqr '.vpn.interface.address')
+VPN_DNS=$(                  yqr '.vpn.interface.dns')
+VPN_PUBLIC_KEY=$(           yqr '.vpn.peer.public_key')
+VPN_HOST=$(                 yqr '.vpn.peer.endpoint' | cut -d: -f1)
+VPN_PORT=$(                 yqr '.vpn.peer.endpoint' | cut -d: -f2)
+WIFI_UPLINK_SSID=$(         yqr '.wifi.uplink.ssid')
+WIFI_UPLINK_PW=$(           yqr '.wifi.uplink.password')
+WIFI_UPLINK_ENCRYPTION=$(   yqr '.wifi.uplink.encryption')
+WIFI_AP_SSID=$(             yqr '.wifi.ap.ssid')
+WIFI_AP_PW=$(               yqr '.wifi.ap.password')
+WIFI_AP_ENCRYPTION=$(       yqr '.wifi.ap.encryption')
 EOF
 
 # Build and relocate images
