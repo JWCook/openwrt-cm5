@@ -248,7 +248,7 @@ uci set mwan3.usb_wan.up='3'
 # Interface: wan (Ethernet backup)
 uci set mwan3.wan=interface
 uci set mwan3.wan.enabled='1'
-uci set mwan3.wan.initial_state='offline'
+uci set mwan3.wan.initial_state='online'
 uci set mwan3.wan.family='ipv4'
 uci set mwan3.wan.track_method='ping'
 uci set mwan3.wan.track_ip='1.1.1.1 1.0.0.1'
@@ -262,31 +262,6 @@ uci set mwan3.wan.failure_interval='5'
 uci set mwan3.wan.recovery_interval='5'
 uci set mwan3.wan.down='5'
 uci set mwan3.wan.up='2'
-
-# Interface: wg0 (VPN)
-# Note: VPN endpoint traffic must bypass VPN routing
-uci set mwan3.wg0=interface
-uci set mwan3.wg0.enabled='1'
-uci set mwan3.wg0.initial_state='offline'
-uci set mwan3.wg0.family='ipv4'
-uci set mwan3.wg0.track_method='ping'
-uci set mwan3.wg0.track_ip="$VPN_DNS"
-uci set mwan3.wg0.reliability='1'
-uci set mwan3.wg0.count='1'
-uci set mwan3.wg0.size='56'
-uci set mwan3.wg0.max_ttl='60'
-uci set mwan3.wg0.timeout='10'
-uci set mwan3.wg0.interval='10'
-uci set mwan3.wg0.failure_interval='5'
-uci set mwan3.wg0.recovery_interval='5'
-uci set mwan3.wg0.down='5'
-uci set mwan3.wg0.up='2'
-
-# Member: wg0 with highest priority (prefer VPN)
-uci set mwan3.wg0_m1_w5=member
-uci set mwan3.wg0_m1_w5.interface='wg0'
-uci set mwan3.wg0_m1_w5.metric='1'
-uci set mwan3.wg0_m1_w5.weight='5'
 
 # Member: wan (Ethernet WAN, highest priority if connected)
 uci set mwan3.wan_m2_w4=member
@@ -309,7 +284,6 @@ uci set mwan3.trm_wwan_m4_w2.weight='2'
 # Policy: prefer VPN, failover to direct WAN connections
 uci set mwan3.vpn_failover=policy
 uci set mwan3.vpn_failover.last_resort='default'
-uci add_list mwan3.vpn_failover.use_member='wg0_m1_w5'
 uci add_list mwan3.vpn_failover.use_member='wan_m2_w4'
 uci add_list mwan3.vpn_failover.use_member='usb_wan_m3_w3'
 uci add_list mwan3.vpn_failover.use_member='trm_wwan_m4_w2'
@@ -322,21 +296,19 @@ uci add_list mwan3.wan_only.use_member='usb_wan_m3_w3'
 uci add_list mwan3.wan_only.use_member='trm_wwan_m4_w2'
 
 # Rule: VPN endpoint traffic bypasses VPN (prevent routing loop)
-# This will be configured dynamically when VPN is set up
-uci set mwan3.vpn_endpoint_rule=rule
-uci set mwan3.vpn_endpoint_rule.proto='udp'
-uci set mwan3.vpn_endpoint_rule.use_policy='wan_only'
-uci set mwan3.vpn_endpoint_rule.family='ipv4'
+uci set mwan3.vpn_ep=rule
+uci set mwan3.vpn_ep.dest_ip="$VPN_HOST"
+uci set mwan3.vpn_ep.dest_port="$VPN_PORT"
+uci set mwan3.vpn_ep.proto='udp'
+uci set mwan3.vpn_ep.use_policy='wan_only'
+uci set mwan3.vpn_ep.family='ipv4'
+uci set mwan3.vpn_ep.sticky='0'
 
 # Rule: all other traffic uses VPN with failover
 uci set mwan3.default_rule=rule
 uci set mwan3.default_rule.dest_ip='0.0.0.0/0'
 uci set mwan3.default_rule.use_policy='vpn_failover'
 uci set mwan3.default_rule.family='ipv4'
-
-# Rule: route VPN endpoint traffic directly (prevent routing loop)
-uci set mwan3.vpn_endpoint_rule.dest_ip="$VPN_HOST"
-uci set mwan3.vpn_endpoint_rule.dest_port="$VPN_PORT"
 
 uci commit mwan3
 
@@ -391,13 +363,17 @@ uci commit sqm
 uci set network.wg0=interface
 uci set network.wg0.proto='wireguard'
 uci set network.wg0.mtu='1380'
+uci set network.wg0.defaultroute='1'
+uci set network.wg0.gateway="$VPN_DNS"
+uci set network.wg0.trm_vpn='1'
+uci set network.wg0.trm_vpnservice='wireguard'
 uci set network.wg0.private_key="$VPN_PRIVATE_KEY"
 uci add_list network.wg0.addresses="$VPN_ADDRESS"
 uci add_list network.wg0.dns="$VPN_DNS"
 
 # Create WireGuard peer
 uci add network wireguard_wg0
-uci set network.@wireguard_wg0[-1].persistent_keepalive='15'
+uci set network.@wireguard_wg0[-1].persistent_keepalive='25'
 uci set network.@wireguard_wg0[-1].route_allowed_ips='1'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='0.0.0.0/0'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='::/0'
@@ -420,10 +396,6 @@ uci add firewall forwarding
 uci set firewall.@forwarding[-1].src='lan'
 uci set firewall.@forwarding[-1].dest='wgvpn'
 
-# Allow forwarding from WAN to WireGuard (for mwan3 routing)
-uci add firewall forwarding
-uci set firewall.@forwarding[-1].src='wan'
-uci set firewall.@forwarding[-1].dest='wgvpn'
 
 uci commit network
 uci commit firewall

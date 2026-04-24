@@ -1,6 +1,10 @@
 #!/bin/sh
 # This script runs when the wg0 interface comes up and ensures the default route
-# goes through wireguard without creating a routing loop
+# goes through wireguard. Basically this avoids a circular dependency between
+# wireguard and mwan3:
+# * wg0 can't come up until there's a WAN interface up to carry the VPN traffic
+# * mwan3 needs a working interface to track liveness (it pings VPN DNS through wg0)
+
 [ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "wg0" ] || exit 0
 
 logger -t wg0-route "wg0 up, setting up routes"
