@@ -25,8 +25,9 @@ uci set system.@system[0].timezone='UTC'
 uci set dhcp.lan.start='100'
 uci set dhcp.lan.limit='150'
 uci set dhcp.lan.leasetime='12h'
-# Disable dnsmasq DNS and point to AdGuard
-uci set dhcp.@dnsmasq[0].port='0'
+# Use AdGuard for main DNS, and dnsmasq only for resolving LAN addresses.
+# 5353 is set as an upstream DNS in AdGuard.
+uci set dhcp.@dnsmasq[0].port='5353'
 uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
 uci commit dhcp
 
@@ -384,7 +385,6 @@ uci commit firewall
 # Update AdGuard Home upstream DNS to use VPN DNS
 if [ -f /etc/adguardhome.yaml ]; then
     sed -i "s|upstream_dns:|upstream_dns:\n    - $VPN_DNS|" /etc/adguardhome.yaml
-    sed -i "/1\.1\.1\.1/d; /1\.0\.0\.1/d" /etc/adguardhome.yaml
 fi
 
 # Add custom files to backup configuration

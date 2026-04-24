@@ -13,13 +13,18 @@ dns:
     - 0.0.0.0
     - 10.8.0.1
   port: 53
-  # Upstream DNS will be set from VPN_DNS on first boot
+  # On first boot, Wireguard VPN will be added as upstream DNS (via VPN_DNS)
   upstream_dns:
-    - 1.1.1.1
-    - 1.0.0.1
+    - '[/lan/]127.0.0.1:5353'
+    - '[/ighwifi.com/]1.1.1.1'
   bootstrap_dns:
     - 1.1.1.1
     - 1.0.0.1
+    - 2606:4700:4700::1111
+    - 2606:4700:4700::1001
+  fallback_dns: []
+  upstream_mode: fastest_addr
+  fastest_timeout: 1s
   allowed_clients:
     - localhost
     - 10.8.0.0/24
@@ -32,7 +37,6 @@ dns:
   cache_ttl_min: 0
   cache_ttl_max: 0
   cache_optimistic: false
-  upstream_mode: fastest_addr
 
 filtering:
   protection_enabled: true
@@ -141,6 +145,7 @@ clients:
   persistent: []
 
 log:
+  enabled: true
   file: ""
   max_backups: 0
   max_size: 100
