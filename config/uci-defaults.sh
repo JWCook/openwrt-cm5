@@ -438,6 +438,7 @@ cat >> /etc/sysupgrade.conf <<'EOF'
 /etc/adguardhome.yaml
 /etc/config/adguardhome
 /etc/config/travelmate
+/etc/hotplug.d/iface
 /var/lib/adguardhome/data/
 EOF
 

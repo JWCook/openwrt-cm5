@@ -23,6 +23,9 @@ cp config/adguardhome.yaml files/etc/adguardhome.yaml
 mkdir -p files/usr/local/bin
 cp user-scripts/healthcheck.sh files/usr/local/bin/router-health
 chmod +x files/usr/local/bin/router-health
+mkdir -p files/etc/hotplug.d/iface
+cp scripts/wg-hotplug.sh files/etc/hotplug.d/iface/25-wg0-route
+chmod +x files/etc/hotplug.d/iface/25-wg0-route
 
 function yqr() {
     yq -r "$1" config/config.yml
