@@ -107,7 +107,7 @@ uci commit network
 
 # Configure built-in WiFi as WAN client
 wifi config
-uci del wireless.default_radio0  # Remove default config (AP mode)
+uci del wireless.default_radio0 2>/dev/null || true  # Remove default config (AP mode)
 uci set wireless.radio0.disabled='0'
 uci set wireless.radio0.band='auto'
 uci set wireless.radio0.htmode='HT40'
@@ -129,6 +129,7 @@ uci set travelmate.global.trm_stdvpnservice='wireguard'
 uci set travelmate.global.trm_stdvpniface='wg0'
 # uci set travelmate.global.trm_debug='1'  # enable debug logs
 # uci set travelmate.global.trm_randomize='1'  # randomize MAC for each connection
+uci commit travelmate
 
 # Add default station to travelmate (if configured)
 if [ -n "$WIFI_UPLINK_SSID" ]; then

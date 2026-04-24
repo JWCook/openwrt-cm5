@@ -61,3 +61,8 @@ Manual steps:
   * Run a [bufferbloat test](https://www.waveform.com/tools/bufferbloat)
   * Enable SQM (Network -> SQM QoS)
   * Set SQM speeds for the current network (85-95% of measured speed)
+
+## Diagnostics
+Two scripts are installed on the router under `/usr/local/bin/`:
+* **`router-health`:** basic health checks that logs interface/connectivity status to `/var/log/router-health.log`
+* **`debug`:** more thorough diagnostics for wireguard/mwan3/DNS/firewall issues

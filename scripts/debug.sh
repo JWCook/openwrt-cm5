@@ -1,12 +1,18 @@
 #!/bin/ash
 # Script to get useful diagnostic info from OpenWRT / WireGuard / mwan3.
-# Represents numerous hours of pain and illustrates the abysmal UX of working with OpenWRT.
-#
-# Usage: debug.sh [wg_interface] [upstream_wan_ip]
-# Example: debug.sh wg0 192.168.1.1
+# Represents numerous hours of pain and illustrates the level of UX to expect when working with OpenWRT.
 
-WG_IF="${1:-wg0}"
-WAN_IP="${2:-}"  # optional: upstream WAN IP for direct throughput test
+# Find the upstream WAN IP: src address of the lowest-metric non-VPN default route.
+# Used for direct throughput tests that bypass the tunnel.
+WAN_DEV=$(ip route show | awk '/default/ && !/wg/' | sort -t= -k2 -n | head -1 | awk '{print $5}')
+if [ -n "$WAN_DEV" ]; then
+    WAN_IP=$(ip route get 1.1.1.1 oif "$WAN_DEV" 2>/dev/null | awk '/src/ {for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')
+fi
+WAN_IP="${WAN_IP:-}"
+WG_IF="wg0"
+LAN_IP="10.8.0.1" # router LAN address / AdGuard DNS
+VPN_DNS="10.2.0.1"
+WAN_IFACES="wan usb_wan trm_wwan"  # physical uplinks managed by mwan3
 
 SEP="================================================================"
 section() { echo; echo "$SEP"; echo "  $1"; echo "$SEP"; }
@@ -41,7 +47,7 @@ echo "Transfer bytes (non-zero = tunnel is carrying traffic):"
 wg show "$WG_IF" transfer 2>/dev/null || echo "n/a"
 
 section "WIREGUARD CONFIG (private key redacted): $WG_IF"
-wg showconf "$WG_IF" 2>/dev/null | grep -v PrivateKey
+wg showconf "$WG_IF" 2>/dev/null | grep -v -E "PrivateKey|PresharedKey"
 
 section "ROUTE FOR TUNNEL-BOUND TRAFFIC (1.1.1.1)"
 ip route get 1.1.1.1
@@ -65,7 +71,7 @@ logread 2>/dev/null | grep wg0-route | tail -10 || echo "logread not available"
 # 2. ROUTING & POLICY
 # ──────────────────────────────────────────────────────────────────
 
-section "DEFAULT ROUTE (should show $WG_IF metric 1)"
+section "DEFAULT ROUTE (should show $WG_IF metric 10)"
 ip route show default
 echo ""
 # Warn if wg0 is not the default
@@ -111,7 +117,7 @@ echo ""
 echo "(GOOD: 'list track_ip'  BAD: 'option track_ip')"
 
 section "MWAN3 TRACK STATUS"
-for iface in wan usb_wan trm_wwan; do
+for iface in $WAN_IFACES; do
     dir="/var/run/mwan3track/$iface"
     if [ -d "$dir" ]; then
         status=$(cat "$dir/STATUS" 2>/dev/null || echo "missing")
@@ -147,8 +153,11 @@ section "DNSMASQ PORT CONFIG (must be 5353, not 0 or 53)"
 uci show dhcp.@dnsmasq[0].port 2>/dev/null || echo "uci not available"
 
 section "DNS RESOLUTION TEST"
-echo "Via AdGuard (10.8.0.1):"
-nslookup google.com 10.8.0.1 2>/dev/null || echo "failed"
+echo "Via AdGuard ($LAN_IP):"
+nslookup google.com "$LAN_IP" 2>/dev/null || echo "failed"
+echo ""
+echo "Via ProtonVPN DNS ($VPN_DNS — only works if wg0 is up):"
+nslookup google.com "$VPN_DNS" 2>/dev/null || echo "failed"
 echo ""
 echo "Via dnsmasq (127.0.0.1:5353):"
 nslookup google.com 127.0.0.1 2>/dev/null || echo "failed"
@@ -156,7 +165,7 @@ nslookup google.com 127.0.0.1 2>/dev/null || echo "failed"
 section "DNS LEAK CHECK — peerdns config (wan/usb_wan should be '0')"
 # peerdns=1 allows DHCP-assigned DNS to enter the resolver chain, potentially leaking
 # outside the VPN. trm_wwan intentionally uses peerdns=1 for captive portal support.
-for iface in wan usb_wan trm_wwan; do
+for iface in $WAN_IFACES; do
     val=$(uci get "network.$iface.peerdns" 2>/dev/null || echo "not set")
     echo "$iface peerdns: $val"
 done
@@ -177,25 +186,28 @@ ps 2>/dev/null | grep -i adguard | grep -v grep || echo "AdGuard not running"
 # 4. FIREWALL / NAT
 # ──────────────────────────────────────────────────────────────────
 
+NFT_RULESET=$(nft list ruleset 2>/dev/null)
+
 section "NFTABLES — NAT / MASQUERADE / FORWARD"
-nft list ruleset 2>/dev/null \
-    | grep -A8 -B2 -E "masquerade|postrouting|forward_lan|forward_wgvpn|srcnat" \
-    || { echo "nft not available, falling back to iptables:"; \
-         iptables -t nat -L POSTROUTING -n -v 2>/dev/null; \
-         iptables -L FORWARD -n -v 2>/dev/null; }
+if [ -n "$NFT_RULESET" ]; then
+    echo "$NFT_RULESET" | grep -A8 -B2 -E "masquerade|postrouting|forward_lan|forward_wgvpn|srcnat"
+else
+    echo "nft not available, falling back to iptables:"
+    iptables -t nat -L POSTROUTING -n -v 2>/dev/null
+    iptables -L FORWARD -n -v 2>/dev/null
+fi
 
 section "FLOW OFFLOADING"
 grep -E "flow_offloading|offload" /etc/config/firewall 2>/dev/null || echo "not configured in firewall config"
-nft list ruleset 2>/dev/null | grep -i "flowtable\|offload" || echo "no flowtable in nft ruleset"
+if [ -n "$NFT_RULESET" ]; then
+    echo "$NFT_RULESET" | grep -i "flowtable\|offload" || echo "no flowtable in nft ruleset"
+fi
 
 # ──────────────────────────────────────────────────────────────────
 # 5. NETWORK INTERFACES
 # ──────────────────────────────────────────────────────────────────
 
-section "INTERFACES (state, MTU)"
-ip link show
-
-section "IP ADDRESSES"
+section "INTERFACES (state, MTU, addresses)"
 ip addr show
 
 section "OFFLOAD SETTINGS"
@@ -244,8 +256,10 @@ sysctl net.core.rmem_max net.core.wmem_max net.core.rmem_default net.core.wmem_d
 sysctl net.ipv4.udp_mem
 
 section "IP FRAGMENTATION STATS"
-grep -E "^Ip:" /proc/net/snmp | tr ' ' '\n' | grep -i frag
-awk '/^Ip:/{if(h){print}else{h=$0}}' /proc/net/snmp
+awk '/^Ip:/ { if (!h) { h=$0; next } \
+    n=split(h,K); split($0,V); \
+    for(i=2;i<=n;i++) if(K[i]~/[Ff]rag/) printf "%s = %s\n", K[i], V[i] \
+}' /proc/net/snmp
 
 section "TRAFFIC CONTROL / QDISC"
 for iface in eth0 "$WG_IF" br-lan phy1-sta0; do
@@ -266,16 +280,17 @@ done
 
 section "THROUGHPUT: DIRECT WAN (no VPN)"
 if [ -n "$WAN_IP" ]; then
-    echo "Small (20 MB) via --interface $WAN_IP:"
+    echo "Active WAN: $WAN_DEV ($WAN_IP)"
+    echo ""
+    echo "Small (20 MB) via $WAN_DEV:"
     curl -o /dev/null --interface "$WAN_IP" \
         'https://speed.cloudflare.com/__down?bytes=20000000' 2>&1 | tail -3
     echo ""
-    echo "Large (50 MB) via --interface $WAN_IP:"
+    echo "Large (50 MB) via $WAN_DEV:"
     curl -o /dev/null --interface "$WAN_IP" \
         'https://speed.cloudflare.com/__down?bytes=50000000' 2>&1 | tail -3
 else
-    echo "No WAN_IP provided — skipping"
-    echo "Usage: $0 $WG_IF <wan_ip>  e.g. $0 $WG_IF 192.168.149.253"
+    echo "Could not determine WAN IP — skipping (no non-VPN default route found)"
 fi
 
 section "THROUGHPUT: THROUGH WIREGUARD TUNNEL"

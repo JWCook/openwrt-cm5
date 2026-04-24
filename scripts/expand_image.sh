@@ -6,7 +6,6 @@ SD_DEV="$1"
 test -z $SD_DEV && echo "Usage: expand_image.sh [device_name]" && exit 1
 
 # Decompress image
-SD_DEV=/dev/sdc
 IMAGE="$(ls dist/openwrt-*-squashfs-factory.img.gz)"
 gunzip -fvk $IMAGE
 IMAGE="${IMAGE%.gz}"
