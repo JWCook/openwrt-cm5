@@ -72,14 +72,21 @@ packages:
     - curl
     - fish
     - htop
+    - iperf3
+    - iputils-ping
+    - iputils-tracepath
     - jq
+    - netcat
     - pv
     - rsync
     - shadow
+    - sudo
+    - tcpdump-mini
     - tmux
     - vim-full
     - wget
     - xz
+    - xz-utils
 
   # Conflicting packages to remove from default image
   remove:
