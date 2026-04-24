@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/ash
 # Health monitoring script for network interfaces + services
 
 LOGFILE="/var/log/router-health.log"
