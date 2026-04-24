@@ -376,12 +376,20 @@ uci add_list network.wg0.dns="$VPN_DNS"
 # Create WireGuard peer
 uci add network wireguard_wg0
 uci set network.@wireguard_wg0[-1].persistent_keepalive='25'
-uci set network.@wireguard_wg0[-1].route_allowed_ips='1'
+uci set network.@wireguard_wg0[-1].route_allowed_ips='0'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='0.0.0.0/0'
 uci add_list network.@wireguard_wg0[-1].allowed_ips='::/0'
 uci set network.@wireguard_wg0[-1].public_key="$VPN_PUBLIC_KEY"
 uci set network.@wireguard_wg0[-1].endpoint_host="$VPN_HOST"
 uci set network.@wireguard_wg0[-1].endpoint_port="$VPN_PORT"
+
+# Static routes to ensure VPN endpoint traffic exits via each WAN interface directly,
+# to avoid a routing loop when traffic is routed through wg0. Works even if mwan3 is down.
+for iface in wan usb_wan trm_wwan; do
+    uci add network route
+    uci set network.@route[-1].interface="$iface"
+    uci set network.@route[-1].target="$VPN_HOST/32"
+done
 
 # Configure WireGuard firewall zone
 uci add firewall zone
