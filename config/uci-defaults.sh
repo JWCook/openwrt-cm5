@@ -163,10 +163,11 @@ fi
 ########## firewall + sshd ##########
 
 # Configure firewall
-uci delete firewall.@zone[1].network 2>/dev/null || true
-uci add_list firewall.@zone[1].network='wan'
-uci add_list firewall.@zone[1].network='trm_wwan'
-uci add_list firewall.@zone[1].network='usb_wan'
+WAN_ZONE=$(uci show firewall | grep "\.name='wan'" | cut -d. -f2)
+uci delete firewall.${WAN_ZONE}.network 2>/dev/null || true
+uci add_list firewall.${WAN_ZONE}.network='wan'
+uci add_list firewall.${WAN_ZONE}.network='trm_wwan'
+uci add_list firewall.${WAN_ZONE}.network='usb_wan'
 # Configure dropbear: use pubkey-only login if an SSH public key is present
 mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
 if [ -f /etc/dropbear/authorized_keys ]; then
@@ -396,7 +397,13 @@ uci commit
 
 # Update AdGuard Home upstream DNS to use VPN DNS
 if [ -f /etc/adguardhome.yaml ]; then
-    sed -i "s|upstream_dns:|upstream_dns:\n    - $VPN_DNS|" /etc/adguardhome.yaml
+    python3 - "$VPN_DNS" /etc/adguardhome.yaml <<'PYEOF'
+import sys, re
+dns, path = sys.argv[1], sys.argv[2]
+text = open(path).read()
+text = re.sub(r'(upstream_dns:\n)', rf'\1    - {dns}\n', text, count=1)
+open(path, 'w').write(text)
+PYEOF
 fi
 
 # Add custom files to backup configuration
