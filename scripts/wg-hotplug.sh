@@ -10,7 +10,9 @@
 logger -t wg0-route "wg0 up, setting up routes"
 
 # Get lowest-metric non-VPN default route (most preferred physical uplink)
-WAN_LINE=$(ip route show | awk '/default/ && !/wg/' | sort -t= -k2 -n | head -1)
+WAN_LINE=$(ip route show | awk '/default/ && !/wg/{
+    m=65536; for(i=1;i<=NF;i++) if($i=="metric") m=$(i+1); print m, $0
+}' | sort -n | head -1 | cut -d' ' -f2-)
 WAN_GW=$(echo "$WAN_LINE" | awk '{print $3}')
 WAN_DEV=$(echo "$WAN_LINE" | awk '{print $5}')
 
