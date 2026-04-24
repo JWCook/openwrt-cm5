@@ -40,8 +40,6 @@ uci add_list dhcp.@dnsmasq[0].rebind_domain='nodogsplash.net'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='wispr.hotspot'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='msftconnecttest.com'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='captive.apple.com'
-uci commit dhcp
-
 # Configure NTP
 uci set system.ntp=timeserver
 uci set system.ntp.enabled='1'
@@ -51,8 +49,6 @@ uci add_list system.ntp.server='0.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='1.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='2.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='3.openwrt.pool.ntp.org'
-uci commit system
-
 # Increase UDP buffer
 echo "net.core.rmem_max=7500000
 net.core.wmem_max=7500000
@@ -103,8 +99,6 @@ uci delete network.usb_wan.dns
 uci add_list network.usb_wan.dns='1.1.1.1'
 uci add_list network.usb_wan.dns='1.0.0.1'
 
-uci commit network
-
 # Configure built-in WiFi as WAN client
 wifi config
 uci del wireless.default_radio0 2>/dev/null || true  # Remove default config (AP mode)
@@ -112,8 +106,6 @@ uci set wireless.radio0.disabled='0'
 uci set wireless.radio0.band='auto'
 uci set wireless.radio0.htmode='HT40'
 uci set wireless.radio0.country='US'
-uci commit wireless
-
 # Enable and configure Travelmate
 uci set travelmate.global=travelmate
 uci set travelmate.global.trm_enabled='1'
@@ -129,8 +121,6 @@ uci set travelmate.global.trm_stdvpnservice='wireguard'
 uci set travelmate.global.trm_stdvpniface='wg0'
 # uci set travelmate.global.trm_debug='1'  # enable debug logs
 # uci set travelmate.global.trm_randomize='1'  # randomize MAC for each connection
-uci commit travelmate
-
 # Add default station to travelmate (if configured)
 if [ -n "$WIFI_UPLINK_SSID" ]; then
     echo "Loaded wifi config - configuring default network"
@@ -144,7 +134,6 @@ if [ -n "$WIFI_UPLINK_SSID" ]; then
     uci set travelmate.@uplink[-1].vpn='1'
     uci set travelmate.@uplink[-1].vpnservice='wireguard'
     uci set travelmate.@uplink[-1].vpniface='wg0'
-    uci commit travelmate
 
     uci set wireless.trm_uplink1=wifi-iface
     uci set wireless.trm_uplink1.device='radio0'
@@ -154,7 +143,6 @@ if [ -n "$WIFI_UPLINK_SSID" ]; then
     uci set wireless.trm_uplink1.encryption="$WIFI_UPLINK_ENCRYPTION"
     uci set wireless.trm_uplink1.key="$WIFI_UPLINK_PW"
     uci set wireless.trm_uplink1.disabled='0'
-    uci commit wireless
 fi
 
 # Add wifi AP (if configured)
@@ -169,7 +157,6 @@ if [ -n "$WIFI_AP_SSID" ]; then
     uci set wireless.wifi_ap1.key="$WIFI_AP_PW"
     uci set wireless.wifi_ap1.network='lan'
     uci set wireless.radio1.disabled='0'
-    uci commit wireless
 fi
 
 
@@ -180,8 +167,6 @@ uci delete firewall.@zone[1].network 2>/dev/null || true
 uci add_list firewall.@zone[1].network='wan'
 uci add_list firewall.@zone[1].network='trm_wwan'
 uci add_list firewall.@zone[1].network='usb_wan'
-uci commit firewall
-
 # Configure dropbear: use pubkey-only login if an SSH public key is present
 mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
 if [ -f /etc/dropbear/authorized_keys ]; then
@@ -191,7 +176,6 @@ if [ -f /etc/dropbear/authorized_keys ]; then
     uci set dropbear.@dropbear[0].PasswordAuth="0"
     uci set dropbear.@dropbear[0].RootPasswordAuth="0"
     uci set dropbear.@dropbear[0].Port="$SSH_PORT"
-    uci commit dropbear
 else
     echo "SSH pubkey not found"
 fi
@@ -315,8 +299,6 @@ uci set mwan3.default_rule.dest_ip='0.0.0.0/0'
 uci set mwan3.default_rule.use_policy='vpn_failover'
 uci set mwan3.default_rule.family='ipv4'
 
-uci commit mwan3
-
 
 ########## sqm ##########
 
@@ -358,8 +340,6 @@ uci set sqm.@queue[-1].script='piece_of_cake.qos'
 uci set sqm.@queue[-1].linklayer='none'
 uci set sqm.@queue[-1].ingress_ecn='ECN'
 uci set sqm.@queue[-1].egress_ecn='ECN'
-
-uci commit sqm
 
 
 ########## wireguard ##########
@@ -412,8 +392,7 @@ uci set firewall.@forwarding[-1].src='lan'
 uci set firewall.@forwarding[-1].dest='wgvpn'
 
 
-uci commit network
-uci commit firewall
+uci commit
 
 # Update AdGuard Home upstream DNS to use VPN DNS
 if [ -f /etc/adguardhome.yaml ]; then
