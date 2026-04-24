@@ -31,6 +31,7 @@ uci set dhcp.lan.leasetime='12h'
 # Use AdGuard for main DNS, and dnsmasq only for resolving LAN addresses.
 # 5353 is set as an upstream DNS in AdGuard.
 uci set dhcp.@dnsmasq[0].port='5353'
+uci set dhcp.@dnsmasq[0].noresolv='1'
 uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
 # Allow dnsmasq to return private IPs for these captive portal domains;
 # otherwise rebind protection will drop it (if not handled by travelmate trm_captive)
