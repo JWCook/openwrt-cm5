@@ -51,11 +51,47 @@ uci add_list system.ntp.server='1.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='2.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='3.openwrt.pool.ntp.org'
 
-# Increase UDP buffer
-echo "net.core.rmem_max=7500000
+
+########## performance ##########
+# Increase some OpenWRT defaults (tuned for ~64MB routers) for a 2GB+ CM5
+
+echo "# UDP socket buffers (WireGuard, DNS)
+net.core.rmem_max=7500000
 net.core.wmem_max=7500000
 net.core.rmem_default=7500000
-net.core.wmem_default=7500000" >> /etc/sysctl.conf
+net.core.wmem_default=7500000
+
+# conntrack table: travel router accumulates stale entries via mwan3 failover
+net.netfilter.nf_conntrack_max=524288
+net.netfilter.nf_conntrack_buckets=131072
+
+# NAPI poll budget: more packets per interrupt cycle on fast SoC + gigabit ethernet
+net.core.netdev_budget=600
+# net.core.netdev_budget_usecs=8000 # TODO: missing kernel support?
+
+# TCP autotuning limits
+net.ipv4.tcp_rmem=4096 131072 16777216
+net.ipv4.tcp_wmem=4096 131072 16777216
+net.ipv4.tcp_mem=786432 1048576 26777216
+
+# BBR congestion control + fq scheduler: better throughput on variable-latency uplinks (WiFi, LTE, hotel ethernet)
+net.ipv4.tcp_congestion_control=bbr
+net.core.default_qdisc=fq
+
+# TCP Fast Open: send data in SYN packet, reduces latency for AdGuard upstream DNS-over-TCP
+net.ipv4.tcp_fastopen=3
+
+# conntrack timeouts: turn over stale entries faster after mwan3 failover
+net.netfilter.nf_conntrack_udp_timeout=30
+net.netfilter.nf_conntrack_udp_timeout_stream=120
+net.netfilter.nf_conntrack_tcp_timeout_established=3600
+
+# Loose reverse path filtering: strict mode silently drops mwan3 policy-routed packets
+net.ipv4.conf.all.rp_filter=2
+net.ipv4.conf.default.rp_filter=2
+" >> /etc/sysctl.conf
+
+modprobe tcp_bbr 2>/dev/null || true
 sysctl -p
 
 

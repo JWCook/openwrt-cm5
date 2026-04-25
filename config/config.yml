@@ -76,6 +76,8 @@ packages:
     - luci-app-travelmate
     - wireguard-tools
     - luci-proto-wireguard
+    - kmod-sched
+    - kmod-tcp-bbr
     - kmod-wireguard
 
     # Misc wireless/security networking tools
