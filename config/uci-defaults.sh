@@ -341,44 +341,51 @@ uci set mwan3.default_rule.family='ipv4'
 
 ########## sqm ##########
 
-# Configure SQM for bufferbloat control on WAN interfaces
-# Note: Adjust based on actual bandwidth.
+# Configure SQM for bufferbloat control on WAN interfaces.
+# CAKE tunes download settings based on observed latency in real time.
+# Upload is set to a generous ceiling; CAKE will not shape below what the link supports.
 
 # SQM for WiFi WAN (trm_wwan): typical 5-40 Mbps Tx / 3-20 Mbps Rx
 uci add sqm queue
-uci set sqm.@queue[-1].enabled='0'
+uci set sqm.@queue[-1].enabled='1'
 uci set sqm.@queue[-1].interface='trm_wwan'
-uci set sqm.@queue[-1].download='5000'  # kbps (conservative)
-uci set sqm.@queue[-1].upload='3000'
+uci set sqm.@queue[-1].download='100000'  # tuned by autorate-ingress
+uci set sqm.@queue[-1].upload='40000'
 uci set sqm.@queue[-1].qdisc='cake'
-uci set sqm.@queue[-1].script='piece_of_cake.qos'
+uci set sqm.@queue[-1].script='layer_cake.qos'
 uci set sqm.@queue[-1].linklayer='none'
 uci set sqm.@queue[-1].ingress_ecn='ECN'
 uci set sqm.@queue[-1].egress_ecn='ECN'
+uci set sqm.@queue[-1].qdisc_advanced='1'
+uci set sqm.@queue[-1].ingress_cake_options='autorate-ingress'
 
 # SQM for Ethernet WAN: typical 10-100 Mbps Rx / 10-50 Mbps Tx
 uci add sqm queue
-uci set sqm.@queue[-1].enabled='0'
+uci set sqm.@queue[-1].enabled='1'
 uci set sqm.@queue[-1].interface='wan'
-uci set sqm.@queue[-1].download='15000'
-uci set sqm.@queue[-1].upload='8000'
+uci set sqm.@queue[-1].download='1000000'  # tuned by autorate-ingress
+uci set sqm.@queue[-1].upload='500000'
 uci set sqm.@queue[-1].qdisc='cake'
-uci set sqm.@queue[-1].script='piece_of_cake.qos'
+uci set sqm.@queue[-1].script='layer_cake.qos'
 uci set sqm.@queue[-1].linklayer='none'
 uci set sqm.@queue[-1].ingress_ecn='ECN'
 uci set sqm.@queue[-1].egress_ecn='ECN'
+uci set sqm.@queue[-1].qdisc_advanced='1'
+uci set sqm.@queue[-1].ingress_cake_options='autorate-ingress'
 
 # SQM for USB tethering: typical 4G LTE 10-80 Mbps Rx / 5-15 Mbps Tx
 uci add sqm queue
-uci set sqm.@queue[-1].enabled='0'
+uci set sqm.@queue[-1].enabled='1'
 uci set sqm.@queue[-1].interface='usb_wan'
-uci set sqm.@queue[-1].download='12000'
-uci set sqm.@queue[-1].upload='8000'
+uci set sqm.@queue[-1].download='200000'   # tuned by autorate-ingress
+uci set sqm.@queue[-1].upload='50000'
 uci set sqm.@queue[-1].qdisc='cake'
-uci set sqm.@queue[-1].script='piece_of_cake.qos'
+uci set sqm.@queue[-1].script='layer_cake.qos'
 uci set sqm.@queue[-1].linklayer='none'
 uci set sqm.@queue[-1].ingress_ecn='ECN'
 uci set sqm.@queue[-1].egress_ecn='ECN'
+uci set sqm.@queue[-1].qdisc_advanced='1'
+uci set sqm.@queue[-1].ingress_cake_options='autorate-ingress'
 
 
 ########## banip ##########

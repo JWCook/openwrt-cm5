@@ -57,10 +57,7 @@ just flash  /dev/sdX # Flash built + expanded image to SD card
 Manual steps:
 * Set root password
 * Change adguard password (default user: admin | pass: changeme)
-* (Optional) For QoS / bufferbloat mitigation:
-  * Run a [bufferbloat test](https://www.waveform.com/tools/bufferbloat)
-  * Enable SQM (Network -> SQM QoS)
-  * Set SQM speeds for the current network (85-95% of measured speed)
+* (Optional) For QoS / bufferbloat mitigation: Run a [bufferbloat test](https://www.waveform.com/tools/bufferbloat)
 
 ## Diagnostics
 Two scripts are installed on the router under `/usr/local/bin/`:
