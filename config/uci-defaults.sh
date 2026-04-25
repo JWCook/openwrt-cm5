@@ -40,6 +40,7 @@ uci add_list dhcp.@dnsmasq[0].rebind_domain='nodogsplash.net'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='wispr.hotspot'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='msftconnecttest.com'
 uci add_list dhcp.@dnsmasq[0].rebind_domain='captive.apple.com'
+
 # Configure NTP
 uci set system.ntp=timeserver
 uci set system.ntp.enabled='1'
@@ -49,6 +50,7 @@ uci add_list system.ntp.server='0.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='1.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='2.openwrt.pool.ntp.org'
 uci add_list system.ntp.server='3.openwrt.pool.ntp.org'
+
 # Increase UDP buffer
 echo "net.core.rmem_max=7500000
 net.core.wmem_max=7500000
@@ -86,8 +88,7 @@ uci add_list network.wan.dns='1.0.0.1'
 uci set network.trm_wwan=interface
 uci set network.trm_wwan.proto='dhcp'
 uci set network.trm_wwan.metric='2048'
-# Allow DHCP DNS to reach captive portal page
-uci set network.trm_wwan.peerdns='1'
+uci set network.trm_wwan.peerdns='1'  # Allow DHCP DNS to reach captive portal
 
 # Configure USB tethering interface (Android)
 uci set network.usb_wan=interface
@@ -106,12 +107,12 @@ uci set wireless.radio0.disabled='0'
 uci set wireless.radio0.band='auto'
 uci set wireless.radio0.htmode='HT40'
 uci set wireless.radio0.country='US'
+
 # Enable and configure Travelmate
 uci set travelmate.global=travelmate
 uci set travelmate.global.trm_enabled='1'
 uci set travelmate.global.trm_captive='1'
-# Optionally set to 1; may cause a circular dependency in some cases
-uci set travelmate.global.trm_netcheck='0'
+uci set travelmate.global.trm_netcheck='0' # Optionally set to 1; may cause a circular dependency
 uci set travelmate.global.trm_autoadd='0'
 uci set travelmate.global.trm_timeout='60'
 uci set travelmate.global.trm_radio='radio0'
@@ -168,6 +169,7 @@ uci delete firewall.${WAN_ZONE}.network 2>/dev/null || true
 uci add_list firewall.${WAN_ZONE}.network='wan'
 uci add_list firewall.${WAN_ZONE}.network='trm_wwan'
 uci add_list firewall.${WAN_ZONE}.network='usb_wan'
+
 # Configure dropbear: use pubkey-only login if an SSH public key is present
 mkdir -p /etc/dropbear && chmod 700 /etc/dropbear
 if [ -f /etc/dropbear/authorized_keys ]; then
@@ -418,10 +420,16 @@ if [ -f /etc/adguardhome.yaml ]; then
     yq -i ".dns.upstream_dns = [\"$VPN_DNS\"] + .dns.upstream_dns" /etc/adguardhome.yaml
     yq -i ".users[0].name = \"$ADGUARD_USER\"" /etc/adguardhome.yaml
     yq -i ".users[0].password = \"$ADGUARD_PASS_HASH\"" /etc/adguardhome.yaml
+
+    # Write creds for use by adguard-refresh hotplug script
+    printf 'ADGUARD_USER=%s\nADGUARD_PASS=%s\n' "$ADGUARD_USER" "$ADGUARD_PASS" \
+        > /etc/adguardhome.credentials
+    chmod 600 /etc/adguardhome.credentials
 fi
 
 # Add custom files to backup configuration
 cat >> /etc/sysupgrade.conf <<'EOF'
+/etc/adguardhome.credentials
 /etc/adguardhome.yaml
 /etc/config/adguardhome
 /etc/config/travelmate
