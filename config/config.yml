@@ -76,6 +76,7 @@ packages:
     # Misc wireless/security networking tools
     - ca-bundle
     - ca-certificates
+    - conntrack
     - iw
     - wireless-tools
     - wpad-openssl

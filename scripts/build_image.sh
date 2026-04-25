@@ -28,6 +28,8 @@ chmod +x files/usr/local/bin/debug
 mkdir -p files/etc/hotplug.d/iface
 cp scripts/wg-hotplug.sh files/etc/hotplug.d/iface/25-wg0-route
 chmod +x files/etc/hotplug.d/iface/25-wg0-route
+cp scripts/mwan3.user.sh files/etc/mwan3.user
+chmod +x files/etc/mwan3.user
 
 function yqr() {
     yq -r "$1" config/config.yml
