@@ -61,6 +61,8 @@ packages:
 
     # Additional applications/services
     - adguardhome
+    - banip
+    - luci-app-banip
     - mwan3
     - luci-app-mwan3
     - sqm-scripts

@@ -343,6 +343,24 @@ uci set sqm.@queue[-1].ingress_ecn='ECN'
 uci set sqm.@queue[-1].egress_ecn='ECN'
 
 
+########## banip ##########
+
+# Enable banIP with a reasonable set of threat feeds
+# Ref: https://openwrt.org/docs/guide-user/firewall/banip
+uci set banip.global=banip
+uci set banip.global.ban_enabled='1'
+uci set banip.global.ban_loglevel='warn'
+uci set banip.global.ban_autodetect='1'
+# Report blocked lookups via nftables verdict maps
+uci set banip.global.ban_nftpriority='filter'
+uci set banip.global.ban_nftpolicyset='1'
+uci add_list banip.global.ban_feed='firehol1'        # High-confidence threats
+uci add_list banip.global.ban_feed='iblockads'       # Ad network IPs
+uci add_list banip.global.ban_feed='tor'             # Tor exit nodes
+uci add_list banip.global.ban_feed='threatview'      # Active C2/malware IPs
+uci add_list banip.global.ban_feed='turris'          # Turris Sentinel (active attackers)
+
+
 ########## wireguard ##########
 
 # Create WireGuard interface
@@ -425,6 +443,8 @@ echo "=== UCI defaults completed: $(date) ==="
 /etc/init.d/mwan3 restart
 /etc/init.d/sqm enable
 /etc/init.d/sqm restart
+/etc/init.d/banip enable
+/etc/init.d/banip start
 /etc/init.d/travelmate enable
 /etc/init.d/travelmate restart
 
