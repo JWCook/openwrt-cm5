@@ -413,15 +413,11 @@ uci set firewall.@forwarding[-1].dest='wgvpn'
 
 uci commit
 
-# Update AdGuard Home upstream DNS to use VPN DNS
+# Update AdGuard Home config: add VPN upstream DNS and configure credentials
 if [ -f /etc/adguardhome.yaml ]; then
-    python3 - "$VPN_DNS" /etc/adguardhome.yaml <<'PYEOF'
-import sys, re
-dns, path = sys.argv[1], sys.argv[2]
-text = open(path).read()
-text = re.sub(r'(upstream_dns:\n)', rf'\1    - {dns}\n', text, count=1)
-open(path, 'w').write(text)
-PYEOF
+    yq -i ".dns.upstream_dns = [\"$VPN_DNS\"] + .dns.upstream_dns" /etc/adguardhome.yaml
+    yq -i ".users[0].name = \"$ADGUARD_USER\"" /etc/adguardhome.yaml
+    yq -i ".users[0].password = \"$ADGUARD_PASS_HASH\"" /etc/adguardhome.yaml
 fi
 
 # Add custom files to backup configuration

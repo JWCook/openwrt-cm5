@@ -13,12 +13,17 @@ vpn:
     public_key: "pubkey"
     endpoint: "vpn.example.com:51820"
 
-# Optional: Dropbear SSH config
+# AdGuard Home credentials
+adguard:
+  user: "admin"
+  pass: "changeme"
+
+# Optional: Dropbear SSH config (remove if unused)
 ssh:
   pubkey: "pubkey"
   port: 22
 
-# Optional: wifi networks to configure
+# Optional: wifi networks to configure (remove if unused)
 wifi:
   # Uplink: WAN client connection via Travelmate
   uplink:

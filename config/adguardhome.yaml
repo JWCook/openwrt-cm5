@@ -6,7 +6,8 @@ http:
 
 users:
   - name: admin
-    password: $2b$10$FrKu0YMMRPnLjqVAB2eZaelhUKkXTqd/nrvg0O7jWfpF3BM69SRe. # "changeme" (bcrypt); change via web UI
+    # overwritten by config.yml at build time
+    password: $2b$10$FrKu0YMMRPnLjqVAB2eZaelhUKkXTqd/nrvg0O7jWfpF3BM69SRe.
 
 dns:
   bind_hosts:
@@ -30,7 +31,7 @@ dns:
     - 10.8.0.0/24
   ratelimit: 20
   refuse_any: true
-  enable_dnssec: false
+  enable_dnssec: true
   edns_client_subnet:
     enabled: false
   cache_size: 4194304

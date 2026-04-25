@@ -35,6 +35,10 @@ function yqr() {
     yq -r "$1" config/config.yml
 }
 
+function bcrypt() {
+    python3 -c "import bcrypt, sys; print(bcrypt.hashpw(sys.argv[1].encode(), bcrypt.gensalt(rounds=10)).decode())" "$1"
+}
+
 # Merge imagebuilder config options
 yqr '.imagebuilder | to_entries | .[] | "\(.key)=\(.value)"' >> user.config
 awk -F= '!/^#/ && /=/ {a[$1]=$0} END {for (k in a) print a[k]}' .config user.config > merged.config
@@ -50,10 +54,12 @@ if [ -n "$SSH_PUBKEY" ] && [ "$SSH_PUBKEY" != "null" ]; then
     chmod 600 files/etc/dropbear/authorized_keys
 fi
 
+ADGUARD_PASS=$(yqr '.adguard.pass')
+ADGUARD_PASS_HASH=$(bcrypt "$ADGUARD_PASS")
+
 # As a mother bird feeds its chicks a slurry of partially digested arthropods,
 # So this script shall feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
-# VPN config (required)
 SSH_PORT=$(                 yqr '.ssh.port')
 VPN_PRIVATE_KEY=$(          yqr '.vpn.interface.private_key')
 VPN_ADDRESS=$(              yqr '.vpn.interface.address')
@@ -69,6 +75,9 @@ WIFI_UPLINK_ENCRYPTION=$(   yqr '.wifi.uplink.encryption')
 WIFI_AP_SSID=$(             yqr '.wifi.ap.ssid')
 WIFI_AP_PW=$(               yqr '.wifi.ap.password')
 WIFI_AP_ENCRYPTION=$(       yqr '.wifi.ap.encryption')
+ADGUARD_USER=$(             yqr '.adguard.user')
+ADGUARD_PASS=$ADGUARD_PASS
+ADGUARD_PASS_HASH=$ADGUARD_PASS_HASH
 EOF
 
 # Build and relocate images
