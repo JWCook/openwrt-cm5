@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     python3 \
     python3-bcrypt \
-    python3-distutils \
+    python3-setuptools \
     tree \
     unzip \
     wget \
@@ -30,9 +30,11 @@ RUN useradd -m -u 1000 -s /bin/bash builder
 
 # Download and extract OpenWRT Image Builder
 RUN wget https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${TARGET}/${SUBTARGET}/openwrt-imagebuilder-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}.Linux-x86_64.tar.zst \
+    && wget https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${TARGET}/${SUBTARGET}/sha256sums \
+    && grep "openwrt-imagebuilder-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}.Linux-x86_64.tar.zst\$" sha256sums | sha256sum -c - \
     && tar --zstd -xf openwrt-imagebuilder-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}.Linux-x86_64.tar.zst \
     && mv openwrt-imagebuilder-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}.Linux-x86_64 imagebuilder \
-    && rm openwrt-imagebuilder-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}.Linux-x86_64.tar.zst
+    && rm openwrt-imagebuilder-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}.Linux-x86_64.tar.zst sha256sums
 
 USER builder
 WORKDIR /builder/imagebuilder
