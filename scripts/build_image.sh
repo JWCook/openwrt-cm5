@@ -2,7 +2,7 @@
 # build-custom-image.sh
 set -e
 cd /builder/imagebuilder
-PROFILE="rpi-5"
+: "${PROFILE:?PROFILE not set (check docker-compose.yml environment)}"
 
 if ! test -f config/config.yml; then
     echo "Configuration file missing; add to config/config.yml"
@@ -62,6 +62,11 @@ ADGUARD_PASS_HASH=$(bcrypt "$ADGUARD_PASS")
 # As a mother bird feeds its chicks a slurry of partially digested arthropods,
 # So this script shall feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
+LAN_IFACE=$(                yqr '.hardware.lan_iface')
+WAN_IFACE=$(                yqr '.hardware.wan_iface')
+USB_IFACE=$(                yqr '.hardware.usb_iface')
+WIFI_UPLINK_RADIO=$(        yqr '.hardware.wifi_uplink_radio')
+WIFI_AP_RADIO=$(            yqr '.hardware.wifi_ap_radio')
 SSH_PORT=$(                 yqr '.ssh.port')
 VPN_PRIVATE_KEY=$(          yqr '.vpn.interface.private_key')
 VPN_ADDRESS=$(              yqr '.vpn.interface.address')

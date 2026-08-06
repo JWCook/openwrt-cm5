@@ -100,9 +100,9 @@ sysctl -p
 # Required for PCIe RTL8111H ethernet controller (ETH1)
 echo "dtparam=pciex1" >> /boot/config.txt
 
-# Configure ETH1 as LAN (br-lan bridge)
+# Configure LAN bridge port
 uci delete network.@device[0].ports
-uci add_list network.@device[0].ports='eth1'
+uci add_list network.@device[0].ports="$LAN_IFACE"
 uci set network.lan=interface
 uci set network.lan.device='br-lan'
 uci set network.lan.proto='static'
@@ -110,9 +110,9 @@ uci set network.lan.ipaddr='10.8.0.1'
 uci set network.lan.netmask='255.255.255.0'
 uci set network.lan.ip6assign='60'
 
-# Configure ETH0 as WAN (backup)
+# Configure WAN port (backup)
 uci set network.wan=interface
-uci set network.wan.device='eth0'
+uci set network.wan.device="$WAN_IFACE"
 uci set network.wan.proto='dhcp'
 uci set network.wan.metric='512'
 uci set network.wan.peerdns='0'
@@ -128,7 +128,7 @@ uci set network.trm_wwan.peerdns='1'  # Allow DHCP DNS to reach captive portal
 
 # Configure USB tethering interface (Android)
 uci set network.usb_wan=interface
-uci set network.usb_wan.device='usb0'
+uci set network.usb_wan.device="$USB_IFACE"
 uci set network.usb_wan.proto='dhcp'
 uci set network.usb_wan.metric='1024'
 uci set network.usb_wan.peerdns='0'
@@ -138,11 +138,11 @@ uci add_list network.usb_wan.dns='1.0.0.1'
 
 # Configure built-in WiFi as WAN client
 wifi config
-uci del wireless.default_radio0 2>/dev/null || true  # Remove default config (AP mode)
-uci set wireless.radio0.disabled='0'
-uci set wireless.radio0.band='auto'
-uci set wireless.radio0.htmode='HT40'
-uci set wireless.radio0.country='US'
+uci del wireless.default_${WIFI_UPLINK_RADIO} 2>/dev/null || true  # Remove default config (AP mode)
+uci set wireless.${WIFI_UPLINK_RADIO}.disabled='0'
+uci set wireless.${WIFI_UPLINK_RADIO}.band='auto'
+uci set wireless.${WIFI_UPLINK_RADIO}.htmode='HT40'
+uci set wireless.${WIFI_UPLINK_RADIO}.country='US'
 
 # Enable and configure Travelmate
 uci set travelmate.global=travelmate
@@ -151,7 +151,7 @@ uci set travelmate.global.trm_captive='1'
 uci set travelmate.global.trm_netcheck='0' # Optionally set to 1; may cause a circular dependency
 uci set travelmate.global.trm_autoadd='0'
 uci set travelmate.global.trm_timeout='60'
-uci set travelmate.global.trm_radio='radio0'
+uci set travelmate.global.trm_radio="$WIFI_UPLINK_RADIO"
 uci set travelmate.global.trm_iface='trm_wwan'
 uci set travelmate.global.trm_vpn='1'
 uci set travelmate.global.trm_stdvpnservice='wireguard'
@@ -164,7 +164,7 @@ if [ -n "$WIFI_UPLINK_SSID" ]; then
 
     uci add travelmate uplink
     uci set travelmate.@uplink[-1].enabled='1'
-    uci set travelmate.@uplink[-1].device='radio0'
+    uci set travelmate.@uplink[-1].device="$WIFI_UPLINK_RADIO"
     uci set travelmate.@uplink[-1].ssid="$WIFI_UPLINK_SSID"
     uci set travelmate.@uplink[-1].con_start_expiry='0'
     uci set travelmate.@uplink[-1].con_end_expiry='0'
@@ -173,7 +173,7 @@ if [ -n "$WIFI_UPLINK_SSID" ]; then
     uci set travelmate.@uplink[-1].vpniface='wg0'
 
     uci set wireless.trm_uplink1=wifi-iface
-    uci set wireless.trm_uplink1.device='radio0'
+    uci set wireless.trm_uplink1.device="$WIFI_UPLINK_RADIO"
     uci set wireless.trm_uplink1.mode='sta'
     uci set wireless.trm_uplink1.network='trm_wwan'
     uci set wireless.trm_uplink1.ssid="$WIFI_UPLINK_SSID"
@@ -187,13 +187,13 @@ if [ -n "$WIFI_AP_SSID" ]; then
     echo "Loaded AP wifi config - configuring access point"
 
     uci set wireless.wifi_ap1=wifi-iface
-    uci set wireless.wifi_ap1.device='radio1'
+    uci set wireless.wifi_ap1.device="$WIFI_AP_RADIO"
     uci set wireless.wifi_ap1.mode='ap'
     uci set wireless.wifi_ap1.ssid="$WIFI_AP_SSID"
     uci set wireless.wifi_ap1.encryption="$WIFI_AP_ENCRYPTION"
     uci set wireless.wifi_ap1.key="$WIFI_AP_PW"
     uci set wireless.wifi_ap1.network='lan'
-    uci set wireless.radio1.disabled='0'
+    uci set wireless.${WIFI_AP_RADIO}.disabled='0'
 fi
 
 

@@ -118,3 +118,11 @@ imagebuilder:
   CONFIG_TARGET_ROOTFS_SQUASHFS: y
   CONFIG_TARGET_ROOTFS_PARTSIZE: 150  # In MB
   CONFIG_BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY: y
+
+# Hardware interfaces; change if porting to different hardware.
+hardware:
+  wan_iface: eth0            # Wired WAN port
+  lan_iface: eth1            # Wired LAN port (bridged into br-lan)
+  usb_iface: usb0            # USB tethering (Android RNDIS)
+  wifi_uplink_radio: radio0  # Radio used as WAN client (Travelmate)
+  wifi_ap_radio: radio1      # Radio used for LAN access point
