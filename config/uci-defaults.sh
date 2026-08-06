@@ -201,6 +201,7 @@ fi
 
 # Configure firewall
 WAN_ZONE=$(uci show firewall | grep "\.name='wan'" | cut -d. -f2)
+[ -n "$WAN_ZONE" ] || { echo "ERROR: wan firewall zone not found"; exit 1; }
 uci delete firewall.${WAN_ZONE}.network 2>/dev/null || true
 uci add_list firewall.${WAN_ZONE}.network='wan'
 uci add_list firewall.${WAN_ZONE}.network='trm_wwan'
