@@ -42,7 +42,7 @@ Additional config that can be edited/added, if needed:
 * SSH public key to use for SSH authentication (instead of a password)
 * Extra packages to install
 * [OpenWRT image builder](https://openwrt.org/docs/guide-user/additional-software/imagebuilder) settings
-* `config/uci-defaults.sh`: UCI default settings (run once on first boot)
+* `config/uci-defaults-common.sh` / `config/uci-defaults-travel.sh`: UCI default settings (run once on first boot; split into hardware-agnostic vs. travel-router-specific settings)
 * `config/adguardhome.yaml`: [AdGuardHome](https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration#configuration-file) settings
 
 ### Build & Flash
