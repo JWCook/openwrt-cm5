@@ -18,19 +18,19 @@ echo ""
 
 # Copy config files and scripts
 cp config/uci-defaults.sh files/etc/uci-defaults/99-custom-config
-cp scripts/mount_data.sh files/etc/uci-defaults/90-mount-data
+cp user-scripts/mount_data.sh files/etc/uci-defaults/90-mount-data
 cp config/adguardhome.yaml files/etc/adguardhome.yaml
 mkdir -p files/usr/local/bin
-cp scripts/healthcheck.sh files/usr/local/bin/router-health
+cp user-scripts/healthcheck.sh files/usr/local/bin/router-health
 chmod +x files/usr/local/bin/router-health
-cp scripts/debug.sh files/usr/local/bin/debug
+cp user-scripts/debug.sh files/usr/local/bin/debug
 chmod +x files/usr/local/bin/debug
 mkdir -p files/etc/hotplug.d/iface
-cp scripts/wg-hotplug.sh files/etc/hotplug.d/iface/25-wg0-route
+cp user-scripts/wg-hotplug.sh files/etc/hotplug.d/iface/25-wg0-route
 chmod +x files/etc/hotplug.d/iface/25-wg0-route
-cp scripts/adguard-refresh.sh files/etc/hotplug.d/iface/26-adguard-refresh
+cp user-scripts/adguard-refresh.sh files/etc/hotplug.d/iface/26-adguard-refresh
 chmod +x files/etc/hotplug.d/iface/26-adguard-refresh
-cp scripts/mwan3.user.sh files/etc/mwan3.user
+cp user-scripts/mwan3.user.sh files/etc/mwan3.user
 chmod +x files/etc/mwan3.user
 
 function yqr() {

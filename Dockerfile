@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
     libncurses5-dev \
     libssl-dev \
     python3 \
+    python3-bcrypt \
     python3-distutils \
     tree \
     unzip \
