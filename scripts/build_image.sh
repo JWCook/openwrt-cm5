@@ -4,6 +4,9 @@ set -e
 cd /builder/imagebuilder
 : "${PROFILE:?PROFILE not set (check docker-compose.yml environment)}"
 
+rm -rf files
+mkdir -p files/etc/uci-defaults
+
 if ! test -f config/config.yml; then
     echo "Configuration file missing; add to config/config.yml"
     exit 1
@@ -42,8 +45,36 @@ function bcrypt() {
     python3 -c "import bcrypt, sys; print(bcrypt.hashpw(sys.argv[1].encode(), bcrypt.gensalt(rounds=10)).decode())" "$1"
 }
 
+# Validate required config.yml fields
+REQUIRED_FIELDS=(
+    .vpn.interface.private_key
+    .vpn.interface.address
+    .vpn.interface.dns
+    .vpn.peer.public_key
+    .vpn.peer.endpoint
+    .hardware.lan_iface
+    .hardware.wan_iface
+    .hardware.usb_iface
+    .hardware.wifi_uplink_radio
+    .hardware.wifi_ap_radio
+    .adguard.user
+    .adguard.pass
+)
+MISSING=()
+for field in "${REQUIRED_FIELDS[@]}"; do
+    value=$(yqr "$field")
+    if [ -z "$value" ] || [ "$value" = "null" ]; then
+        MISSING+=("$field")
+    fi
+done
+if [ ${#MISSING[@]} -gt 0 ]; then
+    echo "Missing required config.yml fields:"
+    printf '  %s\n' "${MISSING[@]}"
+    exit 1
+fi
+
 # Merge imagebuilder config options
-yqr '.imagebuilder | to_entries | .[] | "\(.key)=\(.value)"' >> user.config
+yqr '.imagebuilder | to_entries | .[] | "\(.key)=\(.value)"' > user.config
 awk -F= '!/^#/ && /=/ {a[$1]=$0} END {for (k in a) print a[k]}' .config user.config > merged.config
 mv merged.config .config
 # debug:
@@ -60,8 +91,7 @@ fi
 ADGUARD_PASS=$(yqr '.adguard.pass')
 ADGUARD_PASS_HASH=$(bcrypt "$ADGUARD_PASS")
 
-# As a mother bird feeds its chicks a slurry of partially digested arthropods,
-# So this script shall feed uci-defaults a more easily digestible .env file
+# Feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
 SYSTEM_HOSTNAME=$(          yqr '.system.hostname // "travelrouter"')
 SYSTEM_TIMEZONE=$(          yqr '.system.timezone // "UTC"')
