@@ -7,3 +7,4 @@ dist/
 ssh_key.pub
 vpn.conf
 wifi.env
+config/merged.config

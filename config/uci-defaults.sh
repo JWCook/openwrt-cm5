@@ -310,26 +310,21 @@ uci set mwan3.trm_wwan_m4_w2.interface='trm_wwan'
 uci set mwan3.trm_wwan_m4_w2.metric='4'
 uci set mwan3.trm_wwan_m4_w2.weight='2'
 
-# Policy: prefer VPN, failover to direct WAN connections
+# Policy: physical WAN failover priority (wan > usb_wan > trm_wwan).
+# Used both as the fallback when wg0's kernel default route is down (default_rule)
+# and for VPN endpoint traffic, which must always go direct (vpn_ep).
 uci set mwan3.vpn_failover=policy
 uci set mwan3.vpn_failover.last_resort='default'
 uci add_list mwan3.vpn_failover.use_member='wan_m2_w4'
 uci add_list mwan3.vpn_failover.use_member='usb_wan_m3_w3'
 uci add_list mwan3.vpn_failover.use_member='trm_wwan_m4_w2'
 
-# Policy: direct WAN only (for VPN endpoint traffic)
-uci set mwan3.wan_only=policy
-uci set mwan3.wan_only.last_resort='default'
-uci add_list mwan3.wan_only.use_member='wan_m2_w4'
-uci add_list mwan3.wan_only.use_member='usb_wan_m3_w3'
-uci add_list mwan3.wan_only.use_member='trm_wwan_m4_w2'
-
 # Rule: VPN endpoint traffic bypasses VPN (prevent routing loop)
 uci set mwan3.vpn_ep=rule
 uci set mwan3.vpn_ep.dest_ip="$VPN_HOST"
 uci set mwan3.vpn_ep.dest_port="$VPN_PORT"
 uci set mwan3.vpn_ep.proto='udp'
-uci set mwan3.vpn_ep.use_policy='wan_only'
+uci set mwan3.vpn_ep.use_policy='vpn_failover'
 uci set mwan3.vpn_ep.family='ipv4'
 uci set mwan3.vpn_ep.sticky='0'
 
