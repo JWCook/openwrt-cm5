@@ -9,6 +9,7 @@ vpn:
     address_v6: "2a07:b944::2:2/128"  # optional
     dns: "10.2.0.1"
     dns_v6: "2a07:b944::2:1"  # optional
+    mtu: 1380
   peer:
     public_key: "pubkey"
     endpoint: "vpn.example.com:51820"
@@ -118,6 +119,16 @@ imagebuilder:
   CONFIG_TARGET_ROOTFS_SQUASHFS: y
   CONFIG_TARGET_ROOTFS_PARTSIZE: 150  # In MB
   CONFIG_BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY: y
+
+# Optional: system settings
+system:
+  hostname: "travelrouter"
+  timezone: "UTC"
+
+# Optional: LAN network settings
+network:
+  lan_ipaddr: "10.8.0.1"
+  lan_netmask: "255.255.255.0"
 
 # Hardware interfaces; change if porting to different hardware.
 hardware:

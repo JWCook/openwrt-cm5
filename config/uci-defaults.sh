@@ -21,8 +21,8 @@ fi
 ########## system ##########
 
 # Set hostname and time
-uci set system.@system[0].hostname='travelrouter'
-uci set system.@system[0].timezone='UTC'
+uci set system.@system[0].hostname="$SYSTEM_HOSTNAME"
+uci set system.@system[0].timezone="$SYSTEM_TIMEZONE"
 
 # Configure DHCP and DNS
 uci set dhcp.lan.start='100'
@@ -32,7 +32,7 @@ uci set dhcp.lan.leasetime='12h'
 # 5353 is set as an upstream DNS in AdGuard.
 uci set dhcp.@dnsmasq[0].port='5353'
 uci set dhcp.@dnsmasq[0].noresolv='1'
-uci add_list dhcp.lan.dhcp_option='6,10.8.0.1'
+uci add_list dhcp.lan.dhcp_option="6,$LAN_IPADDR"
 # Allow dnsmasq to return private IPs for these captive portal domains;
 # otherwise rebind protection will drop it (if not handled by travelmate trm_captive)
 uci add_list dhcp.@dnsmasq[0].rebind_domain='na.network-auth.com'
@@ -106,8 +106,8 @@ uci add_list network.@device[0].ports="$LAN_IFACE"
 uci set network.lan=interface
 uci set network.lan.device='br-lan'
 uci set network.lan.proto='static'
-uci set network.lan.ipaddr='10.8.0.1'
-uci set network.lan.netmask='255.255.255.0'
+uci set network.lan.ipaddr="$LAN_IPADDR"
+uci set network.lan.netmask="$LAN_NETMASK"
 uci set network.lan.ip6assign='60'
 
 # Configure WAN port (backup)
@@ -407,7 +407,7 @@ uci add_list banip.global.ban_feed='turris'          # Turris Sentinel (active a
 # Create WireGuard interface
 uci set network.wg0=interface
 uci set network.wg0.proto='wireguard'
-uci set network.wg0.mtu='1380'
+uci set network.wg0.mtu="$VPN_MTU"
 uci set network.wg0.defaultroute='1'
 uci set network.wg0.gateway="$VPN_DNS"
 uci set network.wg0.trm_vpn='1'
@@ -457,6 +457,7 @@ uci commit
 # Update AdGuard Home config: add VPN upstream DNS and configure credentials
 if [ -f /etc/adguardhome.yaml ]; then
     yq -i ".dns.upstream_dns = [\"$VPN_DNS\"] + .dns.upstream_dns" /etc/adguardhome.yaml
+    yq -i "(.dns.bind_hosts[] | select(. == \"10.8.0.1\")) = \"$LAN_IPADDR\"" /etc/adguardhome.yaml
     yq -i ".users[0].name = \"$ADGUARD_USER\"" /etc/adguardhome.yaml
     yq -i ".users[0].password = \"$ADGUARD_PASS_HASH\"" /etc/adguardhome.yaml
 

@@ -10,7 +10,7 @@ if [ -n "$WAN_DEV" ]; then
 fi
 WAN_IP="${WAN_IP:-}"
 WG_IF="wg0"
-LAN_IP="10.8.0.1" # router LAN address / AdGuard DNS
+LAN_IP=$(uci get network.lan.ipaddr 2>/dev/null) # router LAN address / AdGuard DNS
 VPN_DNS="10.2.0.1"
 WAN_IFACES="wan usb_wan trm_wwan"  # physical uplinks managed by mwan3
 

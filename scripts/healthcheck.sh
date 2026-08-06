@@ -3,6 +3,7 @@
 
 LOGFILE="/var/log/router-health.log"
 MAX_LOG_SIZE=102400  # 100KB
+LAN_IP=$(uci get network.lan.ipaddr 2>/dev/null || echo "10.8.0.1")
 
 if [ -f "$LOGFILE" ] && [ $(stat -c%s "$LOGFILE") -gt $MAX_LOG_SIZE ]; then
     mv "$LOGFILE" "${LOGFILE}.old"
@@ -75,7 +76,7 @@ else
 fi
 
 log "--- Connectivity ---"
-check_connectivity 10.8.0.1 "LAN gateway"
+check_connectivity "$LAN_IP" "LAN gateway"
 check_connectivity 1.1.1.1 "Internet"
 
 log "--- VPN Identity ---"

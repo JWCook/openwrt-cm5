@@ -62,6 +62,10 @@ ADGUARD_PASS_HASH=$(bcrypt "$ADGUARD_PASS")
 # As a mother bird feeds its chicks a slurry of partially digested arthropods,
 # So this script shall feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
+SYSTEM_HOSTNAME=$(          yqr '.system.hostname // "travelrouter"')
+SYSTEM_TIMEZONE=$(          yqr '.system.timezone // "UTC"')
+LAN_IPADDR=$(               yqr '.network.lan_ipaddr // "10.8.0.1"')
+LAN_NETMASK=$(              yqr '.network.lan_netmask // "255.255.255.0"')
 LAN_IFACE=$(                yqr '.hardware.lan_iface')
 WAN_IFACE=$(                yqr '.hardware.wan_iface')
 USB_IFACE=$(                yqr '.hardware.usb_iface')
@@ -73,6 +77,7 @@ VPN_ADDRESS=$(              yqr '.vpn.interface.address')
 VPN_DNS=$(                  yqr '.vpn.interface.dns')
 VPN_ADDRESS_V6=$(           yqr '.vpn.interface.address_v6 // ""')
 VPN_DNS_V6=$(               yqr '.vpn.interface.dns_v6 // ""')
+VPN_MTU=$(                  yqr '.vpn.interface.mtu // 1380')
 VPN_PUBLIC_KEY=$(           yqr '.vpn.peer.public_key')
 VPN_HOST=$(                 yqr '.vpn.peer.endpoint' | cut -d: -f1)
 VPN_PORT=$(                 yqr '.vpn.peer.endpoint' | cut -d: -f2)
