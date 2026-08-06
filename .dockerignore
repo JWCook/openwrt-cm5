@@ -1,0 +1,8 @@
+.git
+dist/
+config/config.yml
+config/.env
+config/merged.config
+*.img
+*.img.gz
+.vscode
