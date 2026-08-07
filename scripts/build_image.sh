@@ -91,6 +91,14 @@ fi
 ADGUARD_PASS=$(yqr '.adguard.pass')
 ADGUARD_PASS_HASH=$(bcrypt "$ADGUARD_PASS")
 
+# Generate one "domain|answer" line per configured DNS rewrite (if any)
+yqr '.adguard.dns_rewrites // [] | .[] | to_entries | .[] | [.key, .value] | join("|")' > adguard_dns_rewrites.env
+if [ -s adguard_dns_rewrites.env ]; then
+    mv adguard_dns_rewrites.env files/etc/adguard_dns_rewrites.env
+else
+    rm -f adguard_dns_rewrites.env
+fi
+
 # Feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
 SYSTEM_HOSTNAME=$(          yqr '.system.hostname // "travelrouter"')

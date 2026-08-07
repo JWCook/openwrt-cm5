@@ -22,6 +22,8 @@ dns:
   upstream_dns:
     - '[/lan/]127.0.0.1:5353'
     - '[/ighwifi.com/]1.1.1.1'
+  local_ptr_upstreams:
+    - 127.0.0.1:5353
   bootstrap_dns:
     - 1.1.1.1
     - 1.0.0.1
@@ -30,13 +32,8 @@ dns:
   upstream_mode: fastest_addr
 
 filtering:
-  rewrites:
-    - domain: adguard.lan
-      answer: 10.8.0.1
-      enabled: true
-    - domain: openwrt.lan
-      answer: 10.8.0.1
-      enabled: true
+  # Can be set via config.yml
+  rewrites: []
   blocked_services:
     schedule:
       time_zone: UTC

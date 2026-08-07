@@ -18,6 +18,10 @@ vpn:
 adguard:
   user: "admin"
   pass: "changeme"
+  # Custom DNS rewrites (domain: IP)
+  dns_rewrites:
+    - adguard.lan: 10.8.0.1
+    - openwrt.lan: 10.8.0.1
 
 # Optional: Dropbear SSH config (remove if unused)
 ssh:

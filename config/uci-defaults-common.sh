@@ -249,6 +249,20 @@ if [ -f /etc/adguardhome.yaml ]; then
     yq -i ".users[0].name = \"$ADGUARD_USER\"" /etc/adguardhome.yaml
     yq -i ".users[0].password = \"$ADGUARD_PASS_HASH\"" /etc/adguardhome.yaml
 
+    # /etc/adguard_dns_rewrites.env has one pipe-delimited "domain|answer" line per
+    # rewrite (only written by build_image.sh if config.yml's adguard.dns_rewrites is
+    # non-empty). Replaces the checked-in adguard.lan/openwrt.lan placeholders, since
+    # those hardcode a LAN IP that may not match this build's config.
+    if [ -f /etc/adguard_dns_rewrites.env ]; then
+        echo "Loaded DNS rewrites - configuring AdGuard filtering.rewrites"
+        yq -i '.filtering.rewrites = []' /etc/adguardhome.yaml
+        while IFS='|' read -r domain answer; do
+            [ -n "$domain" ] || continue
+            yq -i ".filtering.rewrites += [{\"domain\": \"$domain\", \"answer\": \"$answer\", \"enabled\": true}]" /etc/adguardhome.yaml
+        done < /etc/adguard_dns_rewrites.env
+        rm -f /etc/adguard_dns_rewrites.env
+    fi
+
     # Write creds for use by adguard-refresh hotplug script
     printf 'ADGUARD_USER=%s\nADGUARD_PASS=%s\n' "$ADGUARD_USER" "$ADGUARD_PASS" \
         > /etc/adguardhome.credentials
