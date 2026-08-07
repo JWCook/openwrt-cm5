@@ -9,4 +9,5 @@ sed -Ei \
     -e 's/(wireless\.[^.]+\.key=).*/\1REDACTED/' \
     -e 's/(wireless\.[^.]+\.ssid=).*/\1REDACTED/' \
     -e 's/(rpcd\.@login\[0\]\.password=).*/\1REDACTED/' \
+    -e 's/(ddns\.[^.]+\.password=).*/\1REDACTED/' \
 "$file"

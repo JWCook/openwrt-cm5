@@ -244,7 +244,8 @@ uci commit
 # Update AdGuard Home config: add VPN upstream DNS and configure credentials
 if [ -f /etc/adguardhome.yaml ]; then
     yq -i ".dns.upstream_dns = [\"$VPN_DNS\"] + .dns.upstream_dns" /etc/adguardhome.yaml
-    yq -i "(.dns.bind_hosts[] | select(. == \"10.8.0.1\")) = \"$LAN_IPADDR\"" /etc/adguardhome.yaml
+    yq -i ".dns.bind_hosts = [\"0.0.0.0\", \"$LAN_IPADDR\"]" /etc/adguardhome.yaml
+    yq -i ".dns.allowed_clients = [\"localhost\", \"$LAN_IPADDR/24\"]" /etc/adguardhome.yaml
     yq -i ".users[0].name = \"$ADGUARD_USER\"" /etc/adguardhome.yaml
     yq -i ".users[0].password = \"$ADGUARD_PASS_HASH\"" /etc/adguardhome.yaml
 
