@@ -42,7 +42,23 @@ function yqr() {
 }
 
 function bcrypt() {
-    python3 -c "import bcrypt, sys; print(bcrypt.hashpw(sys.argv[1].encode(), bcrypt.gensalt(rounds=10)).decode())" "$1"
+    python3 -c "
+import bcrypt, sys
+salt = bcrypt.gensalt(rounds=10)
+hash = bcrypt.hashpw(sys.argv[1].encode(), salt)
+print(hash.decode())
+" "$1"
+}
+
+# Parse config.yml and write matching lines to files/etc/<dest>
+function write_env_list() {
+    local query="$1" dest="$2"
+    yqr "$query" > "$dest"
+    if [ -s "$dest" ]; then
+        mv "$dest" "files/etc/$dest"
+    else
+        rm -f "$dest"
+    fi
 }
 
 # Validate required config.yml fields
@@ -77,7 +93,6 @@ fi
 yqr '.imagebuilder | to_entries | .[] | "\(.key)=\(.value)"' > user.config
 awk -F= '!/^#/ && /=/ {a[$1]=$0} END {for (k in a) print a[k]}' .config user.config > merged.config
 mv merged.config .config
-# debug:
 # sort .config > config/merged.config
 
 # Add SSH public key if configured
@@ -92,12 +107,9 @@ ADGUARD_PASS=$(yqr '.adguard.pass')
 ADGUARD_PASS_HASH=$(bcrypt "$ADGUARD_PASS")
 
 # Generate one "domain|answer" line per configured DNS rewrite (if any)
-yqr '.adguard.dns_rewrites // [] | .[] | to_entries | .[] | [.key, .value] | join("|")' > adguard_dns_rewrites.env
-if [ -s adguard_dns_rewrites.env ]; then
-    mv adguard_dns_rewrites.env files/etc/adguard_dns_rewrites.env
-else
-    rm -f adguard_dns_rewrites.env
-fi
+write_env_list \
+    '.adguard.dns_rewrites // [] | .[] | to_entries | .[] | [.key, .value] | join("|")' \
+    adguard_dns_rewrites.env
 
 # Feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF

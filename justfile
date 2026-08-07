@@ -12,6 +12,9 @@ build *args:
     mkdir -p dist
     docker compose up {{args}}
 
+lint:
+    prek run -a
+
 # Find an attached block device by model name (substring)
 find-sd search='MicroSD':
     #!/bin/bash

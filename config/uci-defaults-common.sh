@@ -217,11 +217,9 @@ uci set network.@wireguard_wg0[-1].endpoint_port="$VPN_PORT"
 # Static route to ensure VPN endpoint traffic exits via WAN directly, to avoid a
 # routing loop when traffic is routed through wg0. Works even if mwan3 is down.
 # (uci-defaults-travel.sh adds equivalent routes for usb_wan/trm_wwan, if present.)
-for iface in wan; do
-    uci add network route
-    uci set network.@route[-1].interface="$iface"
-    uci set network.@route[-1].target="$VPN_HOST/32"
-done
+uci add network route
+uci set network.@route[-1].interface='wan'
+uci set network.@route[-1].target="$VPN_HOST/32"
 
 # Configure WireGuard firewall zone
 uci add firewall zone
@@ -241,25 +239,38 @@ uci set firewall.@forwarding[-1].dest='wgvpn'
 
 uci commit
 
+# Escapes backslashes and double quotes so a value can be safely embedded in a
+# double-quoted yq expression string.
+json_escape() {
+    printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
 # Update AdGuard Home config: add VPN upstream DNS and configure credentials
 if [ -f /etc/adguardhome.yaml ]; then
-    yq -i ".dns.upstream_dns = [\"$VPN_DNS\"] + .dns.upstream_dns" /etc/adguardhome.yaml
-    yq -i ".dns.bind_hosts = [\"0.0.0.0\", \"$LAN_IPADDR\"]" /etc/adguardhome.yaml
-    yq -i ".dns.allowed_clients = [\"localhost\", \"$LAN_IPADDR/24\"]" /etc/adguardhome.yaml
-    yq -i ".users[0].name = \"$ADGUARD_USER\"" /etc/adguardhome.yaml
-    yq -i ".users[0].password = \"$ADGUARD_PASS_HASH\"" /etc/adguardhome.yaml
+    VPN_DNS_ESC=$(json_escape "$VPN_DNS")
+    LAN_IPADDR_ESC=$(json_escape "$LAN_IPADDR")
+    ADGUARD_USER_ESC=$(json_escape "$ADGUARD_USER")
+    ADGUARD_PASS_HASH_ESC=$(json_escape "$ADGUARD_PASS_HASH")
+    yq -i "
+        .dns.upstream_dns = [\"$VPN_DNS_ESC\"] + .dns.upstream_dns |
+        .dns.bind_hosts = [\"0.0.0.0\", \"$LAN_IPADDR_ESC\"] |
+        .dns.allowed_clients = [\"localhost\", \"$LAN_IPADDR_ESC/24\"] |
+        .users[0].name = \"$ADGUARD_USER_ESC\" |
+        .users[0].password = \"$ADGUARD_PASS_HASH_ESC\"
+    " /etc/adguardhome.yaml
 
-    # /etc/adguard_dns_rewrites.env has one pipe-delimited "domain|answer" line per
-    # rewrite (only written by build_image.sh if config.yml's adguard.dns_rewrites is
-    # non-empty). Replaces the checked-in adguard.lan/openwrt.lan placeholders, since
-    # those hardcode a LAN IP that may not match this build's config.
+    # /etc/adguard_dns_rewrites.env will contain one "domain|answer" line per entry
     if [ -f /etc/adguard_dns_rewrites.env ]; then
         echo "Loaded DNS rewrites - configuring AdGuard filtering.rewrites"
-        yq -i '.filtering.rewrites = []' /etc/adguardhome.yaml
+        REWRITES=""
         while IFS='|' read -r domain answer; do
             [ -n "$domain" ] || continue
-            yq -i ".filtering.rewrites += [{\"domain\": \"$domain\", \"answer\": \"$answer\", \"enabled\": true}]" /etc/adguardhome.yaml
+            domain=$(json_escape "$domain")
+            answer=$(json_escape "$answer")
+            entry="{\"domain\":\"$domain\",\"answer\":\"$answer\",\"enabled\":true}"
+            REWRITES="${REWRITES:+$REWRITES,}$entry"
         done < /etc/adguard_dns_rewrites.env
+        yq -i ".filtering.rewrites = [$REWRITES]" /etc/adguardhome.yaml
         rm -f /etc/adguard_dns_rewrites.env
     fi
 
