@@ -295,6 +295,12 @@ echo "=== common uci-defaults completed: $(date) ==="
 /etc/init.d/dropbear restart
 /etc/init.d/firewall restart
 /etc/init.d/network restart
+
+
+# A newly flashed system clock is stuck at build time (months behind), so force ntp sync now
+# (after WAN is up but before banip runs)
+ntpd -q -p 0.openwrt.pool.ntp.org -p 1.openwrt.pool.ntp.org -p 2.openwrt.pool.ntp.org -p 3.openwrt.pool.ntp.org
+
 /etc/init.d/sqm enable
 /etc/init.d/sqm restart
 /etc/init.d/banip enable
