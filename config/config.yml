@@ -23,6 +23,15 @@ adguard:
     - adguard.lan: 10.8.0.1
     - openwrt.lan: 10.8.0.1
 
+# Optional: static DHCP leases
+dhcp:
+  static_leases: []
+  # - name: hostname
+  #   ip: 10.8.0.100
+  #   mac: ["AA:BB:CC:DD:EE:FF"]
+  #   dns: true          # optional: also publish a DNS record for this host
+  #   tags: ["tag"]      # optional: dnsmasq tag(s) for per-tag options/firewall rules
+
 # Optional: Dropbear SSH config (remove if unused)
 ssh:
   pubkey: "pubkey"

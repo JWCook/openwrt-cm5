@@ -111,6 +111,11 @@ write_env_list \
     '.adguard.dns_rewrites // [] | .[] | to_entries | .[] | [.key, .value] | join("|")' \
     adguard_dns_rewrites.env
 
+# Generate one "name|ip|dns|macs_csv|tags_csv" line per configured static DHCP lease (if any)
+write_env_list \
+    '.dhcp.static_leases // [] | .[] | [.name, .ip, (.dns // false | tostring), (.mac // [] | join(",")), (.tags // [] | join(","))] | join("|")' \
+    dhcp_static_leases.env
+
 # Feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
 SYSTEM_HOSTNAME=$(          yqr '.system.hostname // "travelrouter"')

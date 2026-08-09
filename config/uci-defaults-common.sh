@@ -34,6 +34,31 @@ uci set dhcp.@dnsmasq[0].port='5353'
 uci set dhcp.@dnsmasq[0].noresolv='1'
 uci add_list dhcp.lan.dhcp_option="6,$LAN_IPADDR"
 
+# /etc/dhcp_static_leases.env has one pipe-delimited "name|ip|dns|macs_csv|tags_csv" line per
+# lease (only written by build_image.sh if config.yml's dhcp.static_leases is non-empty).
+if [ -f /etc/dhcp_static_leases.env ]; then
+    echo "Loaded static DHCP leases - configuring dhcp hosts"
+    while IFS='|' read -r name ip dns macs tags; do
+        [ -n "$name" ] || continue
+        uci add dhcp host
+        uci set dhcp.@host[-1].name="$name"
+        uci set dhcp.@host[-1].ip="$ip"
+        [ "$dns" = "true" ] && uci set dhcp.@host[-1].dns='1'
+        OLD_IFS="$IFS"
+        IFS=','
+        set -f
+        for mac in $macs; do
+            [ -n "$mac" ] && uci add_list dhcp.@host[-1].mac="$mac"
+        done
+        for tag in $tags; do
+            [ -n "$tag" ] && uci add_list dhcp.@host[-1].tag="$tag"
+        done
+        set +f
+        IFS="$OLD_IFS"
+    done < /etc/dhcp_static_leases.env
+    rm -f /etc/dhcp_static_leases.env
+fi
+
 # Configure NTP
 uci set system.ntp=timeserver
 uci set system.ntp.enabled='1'
