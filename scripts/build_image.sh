@@ -116,6 +116,11 @@ write_env_list \
     '.dhcp.static_leases // [] | .[] | [.name, .ip, (.dns // false | tostring), (.mac // [] | join(",")), (.tags // [] | join(","))] | join("|")' \
     dhcp_static_leases.env
 
+# Generate one "name|src_dport|dest_ip|dest_port|proto|enabled" line per configured port forward (if any)
+write_env_list \
+    '.firewall.port_forwards // [] | .[] | [.name, (.src_dport | tostring), .dest_ip, ((.dest_port // .src_dport) | tostring), (.proto // ""), (if .enabled == false then "false" else "true" end)] | join("|")' \
+    port_forwards.env
+
 # Feed uci-defaults a more easily digestible .env file
 cat > files/etc/config.env <<EOF
 SYSTEM_HOSTNAME=$(          yqr '.system.hostname // "travelrouter"')

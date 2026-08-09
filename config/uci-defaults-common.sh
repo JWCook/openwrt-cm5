@@ -174,6 +174,30 @@ else
 fi
 
 
+########## port forwarding ##########
+
+# /etc/port_forwards.env has one pipe-delimited "name|src_dport|dest_ip|dest_port|proto|enabled"
+# line per forward (only written by build_image.sh if config.yml's firewall.port_forwards is
+# non-empty).
+if [ -f /etc/port_forwards.env ]; then
+    echo "Loaded port forwards - configuring firewall redirects"
+    while IFS='|' read -r name src_dport dest_ip dest_port proto enabled; do
+        [ -n "$name" ] || continue
+        uci add firewall redirect
+        uci set firewall.@redirect[-1].name="$name"
+        uci set firewall.@redirect[-1].target='DNAT'
+        uci set firewall.@redirect[-1].src='wan'
+        uci set firewall.@redirect[-1].dest='lan'
+        uci set firewall.@redirect[-1].src_dport="$src_dport"
+        uci set firewall.@redirect[-1].dest_ip="$dest_ip"
+        uci set firewall.@redirect[-1].dest_port="$dest_port"
+        [ -n "$proto" ] && uci add_list firewall.@redirect[-1].proto="$proto"
+        [ "$enabled" = "false" ] && uci set firewall.@redirect[-1].enabled='0'
+    done < /etc/port_forwards.env
+    rm -f /etc/port_forwards.env
+fi
+
+
 ########## sqm ##########
 
 # Configure SQM for bufferbloat control on the WAN interface.

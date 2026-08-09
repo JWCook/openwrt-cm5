@@ -23,6 +23,11 @@ adguard:
     - adguard.lan: 10.8.0.1
     - openwrt.lan: 10.8.0.1
 
+# Optional: Dropbear SSH config (remove if unused)
+ssh:
+  pubkey: "pubkey"
+  port: 22
+
 # Optional: static DHCP leases
 dhcp:
   static_leases: []
@@ -32,10 +37,12 @@ dhcp:
   #   dns: true          # optional: also publish a DNS record for this host
   #   tags: ["tag"]      # optional: dnsmasq tag(s) for per-tag options/firewall rules
 
-# Optional: Dropbear SSH config (remove if unused)
-ssh:
-  pubkey: "pubkey"
-  port: 22
+# Optional: port forwarding
+firewall:
+  port_forwards:
+    - name: HTTPS
+      src_dport: 443
+      dest_ip: 10.8.0.100
 
 # Optional: wifi networks to configure (remove if unused)
 wifi:

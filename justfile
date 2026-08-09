@@ -10,7 +10,7 @@ clean:
 # Build imagebuilder image (if necessary) and OpenWRT image
 build *args:
     mkdir -p dist
-    docker compose up {{args}}
+    docker compose up --build {{args}}
 
 lint:
     prek run -a
