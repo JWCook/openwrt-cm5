@@ -201,16 +201,34 @@ uci set sqm.@queue[-1].ingress_cake_options='autorate-ingress'
 # Ref: https://openwrt.org/docs/guide-user/firewall/banip
 uci set banip.global=banip
 uci set banip.global.ban_enabled='1'
-uci set banip.global.ban_loglevel='warn'
 uci set banip.global.ban_autodetect='1'
-# Report blocked lookups via nftables verdict maps
-uci set banip.global.ban_nftpriority='filter'
-uci set banip.global.ban_nftpolicyset='1'
+uci add_list banip.global.ban_trigger='wan'          # Reload trigger interface (avoid wan6: noisy)
+uci set banip.global.ban_nftpriority='-100'
+uci set banip.global.ban_nftretry='5'
+uci set banip.global.ban_nftpolicy='performance'     # Faster Set lookups; router has ample RAM
+uci set banip.global.ban_nftcount='1'                # Per-element counters, needed for GeoIP report
+uci set banip.global.ban_map='1'                     # GeoIP report (on-demand only, via `banip report`)
+uci set banip.global.ban_nftexpiry='24h'             # Bound growth of the log-monitor auto-blocklist
 uci add_list banip.global.ban_feed='firehol1'        # High-confidence threats
-uci add_list banip.global.ban_feed='iblockads'       # Ad network IPs
 uci add_list banip.global.ban_feed='tor'             # Tor exit nodes
 uci add_list banip.global.ban_feed='threatview'      # Active C2/malware IPs
 uci add_list banip.global.ban_feed='turris'          # Turris Sentinel (active attackers)
+uci add_list banip.global.ban_feed='cinsscore'       # Suspicious attacker IPs
+uci add_list banip.global.ban_feed='debl'            # fail2ban IP blacklist
+uci add_list banip.global.ban_feed='dshield'         # dshield IP blocklist
+uci add_list banip.global.ban_feed='feodo'           # Feodo tracker (botnet C2)
+uci add_list banip.global.ban_feed='doh'             # Public DoH resolvers (outbound; blocks AdGuard bypass)
+uci add_list banip.global.ban_feed='country'         # Country-based blocking
+uci add_list banip.global.ban_country='by'
+uci add_list banip.global.ban_country='cn'
+uci add_list banip.global.ban_country='ir'
+uci add_list banip.global.ban_country='kp'
+uci add_list banip.global.ban_country='ru'
+# Additional log-based auto-block triggers
+uci add_list banip.global.ban_logterm='error: maximum authentication attempts exceeded'
+uci add_list banip.global.ban_logterm='sshd.*Connection closed by.*\[preauth\]'
+uci add_list banip.global.ban_logterm='SecurityEvent=\"InvalidAccountID\".*RemoteAddress='
+uci add_list banip.global.ban_logterm='received a suspicious remote IP '\''.*'\'''
 
 
 ########## wireguard ##########
@@ -330,5 +348,13 @@ ntpd -q -p 0.openwrt.pool.ntp.org -p 1.openwrt.pool.ntp.org -p 2.openwrt.pool.nt
 /etc/init.d/sqm restart
 /etc/init.d/banip enable
 /etc/init.d/banip start
+
+# Schedule a daily feed refresh: start/restart/boot only restore local backups,
+# only `reload` re-fetches feeds (HTTP ETag check).
+cat >> /etc/crontabs/root <<'EOF'
+0 4 * * * /etc/init.d/banip reload
+EOF
+/etc/init.d/cron enable
+/etc/init.d/cron restart
 
 exit 0
