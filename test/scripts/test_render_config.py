@@ -91,7 +91,9 @@ def test_build_config_tolerates_missing_optional_sections() -> None:
     cfg = _build(_minimal_raw())
     assert cfg.dhcp == []
     assert cfg.port_forwards == []
-    assert cfg.adguard.dns_rewrites == []
+    assert cfg.adguard.dns_rewrites == {}
+    assert cfg.banip.feeds == []
+    assert cfg.banip.countries == []
     assert cfg.ssh.pubkey == ''
     assert cfg.ssh.port == 22
     assert cfg.system.hostname == 'travelrouter'
@@ -175,14 +177,28 @@ def test_build_config_static_lease_wraps_bare_string_mac() -> None:
     assert cfg.dhcp[0].mac == ['AA:BB:CC:DD:EE:FF']
 
 
-def test_build_config_dns_rewrites_is_a_list_of_single_key_dicts() -> None:
+def test_build_config_dns_rewrites_is_a_plain_dict() -> None:
     raw = _minimal_raw()
-    raw['adguard']['dns_rewrites'] = [{'a.lan': '1.2.3.4'}, {'b.lan': '5.6.7.8'}]
+    raw['adguard']['dns_rewrites'] = {'a.lan': '1.2.3.4', 'b.lan': '5.6.7.8'}
     cfg = _build(raw)
-    assert [(r.domain, r.answer) for r in cfg.adguard.dns_rewrites] == [
-        ('a.lan', '1.2.3.4'),
-        ('b.lan', '5.6.7.8'),
-    ]
+    assert cfg.adguard.dns_rewrites == {'a.lan': '1.2.3.4', 'b.lan': '5.6.7.8'}
+
+
+def test_build_config_banip_wraps_bare_string_feed() -> None:
+    raw = _minimal_raw()
+    raw['banip'] = {'feeds': 'tor', 'countries': 'ru'}
+    cfg = _build(raw)
+    assert cfg.banip.feeds == ['tor']
+    assert cfg.banip.countries == ['ru']
+
+
+def test_render_config_json_banip_feeds_and_countries_round_trip() -> None:
+    raw = _minimal_raw()
+    raw['banip'] = {'feeds': ['tor', 'country'], 'countries': ['ru', 'cn']}
+    cfg = _build(raw)
+    rendered = render_config_json(cfg)
+    assert rendered['banip_feeds'] == ['tor', 'country']
+    assert rendered['banip_countries'] == ['ru', 'cn']
 
 
 def test_hash_adguard_password_round_trips_with_bcrypt() -> None:
@@ -324,7 +340,7 @@ def test_unstructure_port_forward(forward: dict[str, Any], expected: dict[str, A
 
 def test_render_config_json_adguard_dns_rewrites_round_trip() -> None:
     raw = _minimal_raw()
-    raw['adguard']['dns_rewrites'] = [{'a.lan': '1.2.3.4'}]
+    raw['adguard']['dns_rewrites'] = {'a.lan': '1.2.3.4'}
     cfg = _build(raw)
     rendered = render_config_json(cfg)
     assert rendered['adguard_dns_rewrites'] == [{'domain': 'a.lan', 'answer': '1.2.3.4'}]
@@ -335,7 +351,7 @@ def test_main_end_to_end(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     config_dir = tmp_path / 'config'
     config_dir.mkdir()
     raw = _minimal_raw()
-    raw['adguard']['dns_rewrites'] = [{'a.lan': '1.2.3.4'}]
+    raw['adguard']['dns_rewrites'] = {'a.lan': '1.2.3.4'}
     (config_dir / 'config.yml').write_text(yaml.dump(raw))
     (tmp_path / 'files' / 'etc').mkdir(parents=True)
 
@@ -349,6 +365,8 @@ def test_main_end_to_end(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     # "not configured".
     assert config['dhcp'] == []
     assert config['port_forwards'] == []
+    assert config['banip_feeds'] == []
+    assert config['banip_countries'] == []
     assert not (files_etc / 'dropbear').exists()
 
 

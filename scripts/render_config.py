@@ -27,16 +27,6 @@ def _required(instance: Any, attribute: Any, value: Any):
         raise ValueError
 
 
-def _as_dns_rewrites(value: Any) -> list['DnsRewrite']:
-    if not value:
-        return []
-    return [
-        DnsRewrite(domain=domain, answer=answer)
-        for entry in value
-        for domain, answer in entry.items()
-    ]
-
-
 @define
 class SystemConfig:
     hostname: str = 'travelrouter'
@@ -83,16 +73,16 @@ class NetworkConfig:
 
 
 @define
-class DnsRewrite:
-    domain: str
-    answer: str
-
-
-@define
 class AdguardConfig:
     user: str = field(default='', validator=_required)
     password: str = field(default='', validator=_required)
-    dns_rewrites: list[DnsRewrite] = field(converter=_as_dns_rewrites, factory=list)
+    dns_rewrites: dict[str, str] = field(factory=dict)
+
+
+@define
+class BanipConfig:
+    feeds: list[str] = field(converter=_as_str_list, factory=list)
+    countries: list[str] = field(converter=_as_str_list, factory=list)
 
 
 @define
@@ -124,6 +114,7 @@ class AppConfig:
     dhcp: list[StaticLease] = field(factory=list)
     port_forwards: list[PortForward] = field(factory=list)
     adguard: AdguardConfig = field(factory=AdguardConfig)
+    banip: BanipConfig = field(factory=BanipConfig)
 
 
 CONVERTER = cattrs.Converter(prefer_attrib_converters=True)
@@ -186,7 +177,11 @@ def render_config_json(cfg: AppConfig) -> dict[str, Any]:
         **scalars,
         'dhcp': CONVERTER.unstructure(cfg.dhcp),
         'port_forwards': CONVERTER.unstructure(cfg.port_forwards),
-        'adguard_dns_rewrites': CONVERTER.unstructure(cfg.adguard.dns_rewrites),
+        'adguard_dns_rewrites': [
+            {'domain': d, 'answer': a} for d, a in cfg.adguard.dns_rewrites.items()
+        ],
+        'banip_feeds': cfg.banip.feeds,
+        'banip_countries': cfg.banip.countries,
     }
 
 

@@ -1,7 +1,7 @@
 # OpenWRT Configuration: a subset of router settings I'd like to modify and see at a glance.
-# Most of these will be passed to uci to set in their final config files under /etc.
+# Most of these will be passed to uci, which will then update the final config files under /etc.
 # Also includes options for imagebuilder, and other software not managed by uci (like AdGuardHome).
-# Required: At least vpm config must be edited with your own values.
+# Required: At least VPN config must be edited with your own values.
 
 
 # Optional: system settings
@@ -37,8 +37,8 @@ network:
   vpn:
     private_key: "privkey"
     address: "10.2.0.2/32"
-    address_v6: "2a07:b944::2:2/128"  # optional
     dns: "10.2.0.1"
+    address_v6: "2a07:b944::2:2/128"  # optional
     dns_v6: "2a07:b944::2:1"  # optional
     mtu: 1380
     peer_public_key: "pubkey"
@@ -70,8 +70,24 @@ adguard:
   password: "changeme"
   # Custom DNS rewrites (domain: IP)
   dns_rewrites:
-    - adguard.lan: 10.8.0.1
-    - openwrt.lan: 10.8.0.1
+    adguard.lan: 10.8.0.1
+    openwrt.lan: 10.8.0.1
+
+# BanIP feeds and rules (/etc/config/banip)
+# Ref: https://openwrt.org/docs/guide-user/firewall/banip
+banip:
+  feeds:
+    - cinsscore   # Suspicious attacker IPs
+    - debl        # fail2ban IP blacklist
+    - doh         # Public DoH resolvers (outbound; blocks AdGuard bypass)
+    - dshield     # dshield IP blocklist
+    - feodo       # Feodo tracker (botnet C2)
+    - firehol1    # High-confidence threats
+    - threatview  # Active C2/malware IPs
+    - tor         # Tor exit nodes
+    - turris      # Turris Sentinel (active attackers)
+    - country     # Country-based blocking
+  countries: [by, cn, ir, kp, ru, tr]
 
 # OpenWRT imagebuilder options (only used at build time)
 imagebuilder:

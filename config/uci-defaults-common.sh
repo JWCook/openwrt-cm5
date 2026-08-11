@@ -245,21 +245,13 @@ uci set banip.global.ban_nftpolicy='performance'     # Faster Set lookups; route
 uci set banip.global.ban_nftcount='1'                # Per-element counters, needed for GeoIP report
 uci set banip.global.ban_map='1'                     # GeoIP report (on-demand only, via `banip report`)
 uci set banip.global.ban_nftexpiry='24h'             # Bound growth of the log-monitor auto-blocklist
-uci add_list banip.global.ban_feed='firehol1'        # High-confidence threats
-uci add_list banip.global.ban_feed='tor'             # Tor exit nodes
-uci add_list banip.global.ban_feed='threatview'      # Active C2/malware IPs
-uci add_list banip.global.ban_feed='turris'          # Turris Sentinel (active attackers)
-uci add_list banip.global.ban_feed='cinsscore'       # Suspicious attacker IPs
-uci add_list banip.global.ban_feed='debl'            # fail2ban IP blacklist
-uci add_list banip.global.ban_feed='dshield'         # dshield IP blocklist
-uci add_list banip.global.ban_feed='feodo'           # Feodo tracker (botnet C2)
-uci add_list banip.global.ban_feed='doh'             # Public DoH resolvers (outbound; blocks AdGuard bypass)
-uci add_list banip.global.ban_feed='country'         # Country-based blocking
-uci add_list banip.global.ban_country='by'
-uci add_list banip.global.ban_country='cn'
-uci add_list banip.global.ban_country='ir'
-uci add_list banip.global.ban_country='kp'
-uci add_list banip.global.ban_country='ru'
+# banip_feeds/banip_countries are JSON arrays of strings (config.yml's banip.feeds/countries)
+for feed in $(jq -r '.banip_feeds[]' /etc/config.json); do
+    uci add_list banip.global.ban_feed="$feed"
+done
+for country in $(jq -r '.banip_countries[]' /etc/config.json); do
+    uci add_list banip.global.ban_country="$country"
+done
 # Additional log-based auto-block triggers
 uci add_list banip.global.ban_logterm='error: maximum authentication attempts exceeded'
 uci add_list banip.global.ban_logterm='sshd.*Connection closed by.*\[preauth\]'
