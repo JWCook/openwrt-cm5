@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     python3 \
     python3-bcrypt \
+    python3-pip \
     python3-setuptools \
+    python3-yaml \
     tree \
     unzip \
     wget \
@@ -24,6 +26,8 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     zstd \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --break-system-packages --no-cache-dir attrs cattrs
 
 WORKDIR /builder
 RUN useradd -m -u 1000 -s /bin/bash builder

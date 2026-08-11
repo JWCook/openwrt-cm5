@@ -8,3 +8,7 @@ ssh_key.pub
 vpn.conf
 wifi.env
 config/merged.config
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/

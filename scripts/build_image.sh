@@ -12,9 +12,11 @@ if ! test -f config/config.yml; then
     exit 1
 fi
 
+python3 user-scripts/render_config.py
+
 # Parse packages from config
-PACKAGES_ADD=$(yq -r '.packages.add[]' config/config.yml | tr '\n' ' ')
-PACKAGES_REMOVE=$(yq -r '.packages.remove[]' config/config.yml | sed 's/^/-/' | tr '\n' ' ')
+PACKAGES_ADD=$(yq -r '.imagebuilder.packages_add[]' config/config.yml | tr '\n' ' ')
+PACKAGES_REMOVE=$(yq -r '.imagebuilder.packages_remove[]' config/config.yml | sed 's/^/-/' | tr '\n' ' ')
 PACKAGES="$PACKAGES_REMOVE $PACKAGES_ADD"
 echo "Package changes: $PACKAGES"
 echo ""
@@ -41,117 +43,11 @@ function yqr() {
     yq -r "$1" config/config.yml
 }
 
-function bcrypt() {
-    python3 -c "
-import bcrypt, sys
-salt = bcrypt.gensalt(rounds=10)
-hash = bcrypt.hashpw(sys.argv[1].encode(), salt)
-print(hash.decode())
-" "$1"
-}
-
-# Parse config.yml and write matching lines to files/etc/<dest>
-function write_env_list() {
-    local query="$1" dest="$2"
-    yqr "$query" > "$dest"
-    if [ -s "$dest" ]; then
-        mv "$dest" "files/etc/$dest"
-    else
-        rm -f "$dest"
-    fi
-}
-
-# Validate required config.yml fields
-REQUIRED_FIELDS=(
-    .vpn.interface.private_key
-    .vpn.interface.address
-    .vpn.interface.dns
-    .vpn.peer.public_key
-    .vpn.peer.endpoint
-    .hardware.lan_iface
-    .hardware.wan_iface
-    .hardware.usb_iface
-    .hardware.wifi_uplink_radio
-    .hardware.wifi_ap_radio
-    .adguard.user
-    .adguard.pass
-)
-MISSING=()
-for field in "${REQUIRED_FIELDS[@]}"; do
-    value=$(yqr "$field")
-    if [ -z "$value" ] || [ "$value" = "null" ]; then
-        MISSING+=("$field")
-    fi
-done
-if [ ${#MISSING[@]} -gt 0 ]; then
-    echo "Missing required config.yml fields:"
-    printf '  %s\n' "${MISSING[@]}"
-    exit 1
-fi
-
 # Merge imagebuilder config options
-yqr '.imagebuilder | to_entries | .[] | "\(.key)=\(.value)"' > user.config
+yqr '.imagebuilder.make_vars | to_entries | .[] | "\(.key)=\(.value)"' > user.config
 awk -F= '!/^#/ && /=/ {a[$1]=$0} END {for (k in a) print a[k]}' .config user.config > merged.config
 mv merged.config .config
 # sort .config > config/merged.config
-
-# Add SSH public key if configured
-SSH_PUBKEY=$(yq -r '.ssh.pubkey // ""' config/config.yml)
-if [ -n "$SSH_PUBKEY" ] && [ "$SSH_PUBKEY" != "null" ]; then
-    mkdir -p files/etc/dropbear
-    echo "$SSH_PUBKEY" > files/etc/dropbear/authorized_keys
-    chmod 600 files/etc/dropbear/authorized_keys
-fi
-
-ADGUARD_PASS=$(yqr '.adguard.pass')
-ADGUARD_PASS_HASH=$(bcrypt "$ADGUARD_PASS")
-
-# Generate one "domain|answer" line per configured DNS rewrite (if any)
-write_env_list \
-    '.adguard.dns_rewrites // [] | .[] | to_entries | .[] | [.key, .value] | join("|")' \
-    adguard_dns_rewrites.env
-
-# Generate one "name|ip|dns|macs_csv|tags_csv" line per configured static DHCP lease (if any)
-write_env_list \
-    '.dhcp.static_leases // [] | .[] | [.name, .ip, (.dns // false | tostring), (.mac // [] | join(",")), (.tags // [] | join(","))] | join("|")' \
-    dhcp_static_leases.env
-
-# Generate one "name|src_dport|dest_ip|dest_port|proto|enabled" line per configured port forward (if any)
-write_env_list \
-    '.firewall.port_forwards // [] | .[] | [.name, (.src_dport | tostring), .dest_ip, ((.dest_port // .src_dport) | tostring), (.proto // ""), (if .enabled == false then "false" else "true" end)] | join("|")' \
-    port_forwards.env
-
-# Feed uci-defaults a more easily digestible .env file
-cat > files/etc/config.env <<EOF
-SYSTEM_HOSTNAME=$(          yqr '.system.hostname // "travelrouter"')
-SYSTEM_TIMEZONE=$(          yqr '.system.timezone // "UTC"')
-LAN_IPADDR=$(               yqr '.network.lan_ipaddr // "10.8.0.1"')
-LAN_NETMASK=$(              yqr '.network.lan_netmask // "255.255.255.0"')
-LAN_IFACE=$(                yqr '.hardware.lan_iface')
-WAN_IFACE=$(                yqr '.hardware.wan_iface')
-USB_IFACE=$(                yqr '.hardware.usb_iface')
-WIFI_UPLINK_RADIO=$(        yqr '.hardware.wifi_uplink_radio')
-WIFI_AP_RADIO=$(            yqr '.hardware.wifi_ap_radio')
-SSH_PORT=$(                 yqr '.ssh.port')
-VPN_PRIVATE_KEY=$(          yqr '.vpn.interface.private_key')
-VPN_ADDRESS=$(              yqr '.vpn.interface.address')
-VPN_DNS=$(                  yqr '.vpn.interface.dns')
-VPN_ADDRESS_V6=$(           yqr '.vpn.interface.address_v6 // ""')
-VPN_DNS_V6=$(               yqr '.vpn.interface.dns_v6 // ""')
-VPN_MTU=$(                  yqr '.vpn.interface.mtu // 1380')
-VPN_PUBLIC_KEY=$(           yqr '.vpn.peer.public_key')
-VPN_HOST=$(                 yqr '.vpn.peer.endpoint' | cut -d: -f1)
-VPN_PORT=$(                 yqr '.vpn.peer.endpoint' | cut -d: -f2)
-WIFI_UPLINK_SSID=$(         yqr '.wifi.uplink.ssid')
-WIFI_UPLINK_PW=$(           yqr '.wifi.uplink.password')
-WIFI_UPLINK_ENCRYPTION=$(   yqr '.wifi.uplink.encryption')
-WIFI_AP_SSID=$(             yqr '.wifi.ap.ssid')
-WIFI_AP_PW=$(               yqr '.wifi.ap.password')
-WIFI_AP_ENCRYPTION=$(       yqr '.wifi.ap.encryption')
-ADGUARD_USER=$(             yqr '.adguard.user')
-ADGUARD_PASS=$ADGUARD_PASS
-ADGUARD_PASS_HASH=$ADGUARD_PASS_HASH
-EOF
 
 # Build and relocate images
 make image \

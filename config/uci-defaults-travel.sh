@@ -8,11 +8,11 @@ exec >> /etc/uci-defaults/log 2>&1
 echo "=== travel uci-defaults started: $(date) ==="
 
 # Load configuration
-if test -f /etc/config.env; then
-    . /etc/config.env
+if test -f /etc/config.json; then
+    eval "$(jq -r 'to_entries[] | select(.value|type=="string") | "\(.key)=\(.value|@sh)"' /etc/config.json)"
     echo "Loaded config"
 else
-    echo "Missing config.env"
+    echo "Missing config.json"
     exit 1
 fi
 
@@ -288,5 +288,5 @@ echo "=== travel uci-defaults completed: $(date) ==="
 /etc/init.d/travelmate enable
 /etc/init.d/travelmate restart
 
-rm -f /etc/config.env
+rm -f /etc/config.json
 exit 0

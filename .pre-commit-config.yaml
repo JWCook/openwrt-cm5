@@ -13,3 +13,9 @@ repos:
     hooks:
       - id: shellcheck
         args: ["--exclude=SC2046,SC2155,SC2164,SC2187", "--severity=warning"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.2
+    hooks:
+      - id: ruff-check
+        args: [ --fix ]
+      - id: ruff-format

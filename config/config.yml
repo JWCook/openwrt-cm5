@@ -1,67 +1,92 @@
-# OpenWRT Configuration
-# Copy this file to config.yml and fill in your values
+# OpenWRT Configuration: a subset of router settings I'd like to modify and see at a glance.
+# Most of these will be passed to uci to set in their final config files under /etc.
+# Also includes options for imagebuilder, and other software not managed by uci (like AdGuardHome).
+# Required: At least vpm config must be edited with your own values.
 
-# Required: Wireguard VPN config
-vpn:
-  interface:
-    private_key: "privkey"
-    address: "10.2.0.2/32"
-    address_v6: "2a07:b944::2:2/128"  # optional
-    dns: "10.2.0.1"
-    dns_v6: "2a07:b944::2:1"  # optional
-    mtu: 1380
-  peer:
-    public_key: "pubkey"
-    endpoint: "vpn.example.com:51820"
 
-# AdGuard Home credentials
-adguard:
-  user: "admin"
-  pass: "changeme"
-  # Custom DNS rewrites (domain: IP)
-  dns_rewrites:
-    - adguard.lan: 10.8.0.1
-    - openwrt.lan: 10.8.0.1
+# Optional: system settings
+system:
+  hostname: "travelrouter"
+  timezone: "UTC"
 
-# Optional: Dropbear SSH config (remove if unused)
-ssh:
-  pubkey: "pubkey"
-  port: 22
+# Network interfaces/settings (/etc/config/network)
+network:
+  wan_iface: eth0            # Wired WAN port
+  lan_iface: eth1            # Wired LAN port (bridged into br-lan)
+  usb_iface: usb0            # USB tethering (Android RNDIS)
+  wifi_uplink_radio: radio0  # Radio used as WAN client (Travelmate)
+  wifi_ap_radio: radio1      # Radio used for LAN access point
+  lan_ipaddr: "10.8.0.1"     # used by multiple config files)
+  lan_netmask: "255.255.255.0"
 
-# Optional: static DHCP leases
-dhcp:
-  static_leases: []
-  # - name: hostname
-  #   ip: 10.8.0.100
-  #   mac: ["AA:BB:CC:DD:EE:FF"]
-  #   dns: true          # optional: also publish a DNS record for this host
-  #   tags: ["tag"]      # optional: dnsmasq tag(s) for per-tag options/firewall rules
-
-# Optional: port forwarding
-firewall:
-  port_forwards:
-    - name: HTTPS
-      src_dport: 443
-      dest_ip: 10.8.0.100
-
-# Optional: wifi networks to configure (remove if unused)
-wifi:
+  # Optional: wifi networks (remove if unused)
   # Uplink: WAN client connection via Travelmate
-  uplink:
+  wifi_uplink:
     ssid: "ssid"
     password: "pass"
     # Reference: https://openwrt.org/docs/guide-user/network/wifi/basic#encryption_modes
     encryption: psk2
 
   # AP: LAN access point on radio1 (optional)
-  ap:
+  wifi_ap:
     ssid: "ssid"
     password: "pass"
     encryption: psk2
 
-# Packages to install/remove
-packages:
-  add:
+  # Wireguard VPN config
+  vpn:
+    private_key: "privkey"
+    address: "10.2.0.2/32"
+    address_v6: "2a07:b944::2:2/128"  # optional
+    dns: "10.2.0.1"
+    dns_v6: "2a07:b944::2:1"  # optional
+    mtu: 1380
+    peer_public_key: "pubkey"
+    peer_endpoint: "vpn.example.com:51820"
+
+# Optional: Dropbear SSH (/etc/config/dropbear)
+ssh:
+  pubkey: "pubkey"
+  port: 22
+
+# Optional: static DHCP leases (/etc/config/dhcp)
+dhcp: []
+  # - name: hostname
+  #   ip: 10.8.0.100
+  #   mac: ["AA:BB:CC:DD:EE:FF"]
+  #   dns: true          # optional: also publish a DNS record for this host
+  #   tags: ["tag"]      # optional: dnsmasq tag(s) for per-tag options/firewall rules
+
+# Optional: Port forwarding firewall rules (/etc/config/firewall)
+port_forwards:
+  - name: HTTPS
+    src_dport: 443
+    dest_ip: 10.8.0.100
+
+
+# AdGuard Home (/etc/adguardhome/adguardhome.yaml)
+adguard:
+  user: "admin"
+  password: "changeme"
+  # Custom DNS rewrites (domain: IP)
+  dns_rewrites:
+    - adguard.lan: 10.8.0.1
+    - openwrt.lan: 10.8.0.1
+
+# OpenWRT imagebuilder options (only used at build time)
+imagebuilder:
+
+  # Makefile environment variables. Reference:
+  # https://openwrt.org/docs/guide-user/additional-software/imagebuilder
+  # https://mintlify.wiki/openwrt/openwrt/reference/image-variables
+  make_vars:
+    CONFIG_TARGET_ROOTFS_EXT4FS: n  # Skip building ext4 images
+    CONFIG_TARGET_ROOTFS_SQUASHFS: y
+    CONFIG_TARGET_ROOTFS_PARTSIZE: 150  # In MB
+    CONFIG_BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY: y
+
+  # Packages to install
+  packages_add:
     # USB/WiFi drivers
     - block-mount
     - kmod-mt76x2u
@@ -128,32 +153,8 @@ packages:
     - wget
     - xz
     - xz-utils
+    - yq
 
-  # Conflicting packages to remove from default image
-  remove:
+  # Conflicting packages to remove from base image
+  packages_remove:
     - wpad-basic-mbedtls
-
-# OpenWRT imagebuilder options
-imagebuilder:
-  CONFIG_TARGET_ROOTFS_EXT4FS: n  # Skip building ext4 images
-  CONFIG_TARGET_ROOTFS_SQUASHFS: y
-  CONFIG_TARGET_ROOTFS_PARTSIZE: 150  # In MB
-  CONFIG_BUSYBOX_CONFIG_FEATURE_EDITING_SAVEHISTORY: y
-
-# Optional: system settings
-system:
-  hostname: "travelrouter"
-  timezone: "UTC"
-
-# Optional: LAN network settings
-network:
-  lan_ipaddr: "10.8.0.1"
-  lan_netmask: "255.255.255.0"
-
-# Hardware interfaces; change if porting to different hardware.
-hardware:
-  wan_iface: eth0            # Wired WAN port
-  lan_iface: eth1            # Wired LAN port (bridged into br-lan)
-  usb_iface: usb0            # USB tethering (Android RNDIS)
-  wifi_uplink_radio: radio0  # Radio used as WAN client (Travelmate)
-  wifi_ap_radio: radio1      # Radio used for LAN access point

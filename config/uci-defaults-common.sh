@@ -9,11 +9,11 @@ exec >> /etc/uci-defaults/log 2>&1
 echo "=== common uci-defaults started: $(date) ==="
 
 # Load configuration
-if test -f /etc/config.env; then
-    . /etc/config.env
+if test -f /etc/config.json; then
+    eval "$(jq -r 'to_entries[] | select(.value|type=="string") | "\(.key)=\(.value|@sh)"' /etc/config.json)"
     echo "Loaded config"
 else
-    echo "Missing config.env"
+    echo "Missing config.json"
     exit 1
 fi
 
@@ -34,29 +34,32 @@ uci set dhcp.@dnsmasq[0].port='5353'
 uci set dhcp.@dnsmasq[0].noresolv='1'
 uci add_list dhcp.lan.dhcp_option="6,$LAN_IPADDR"
 
-# /etc/dhcp_static_leases.env has one pipe-delimited "name|ip|dns|macs_csv|tags_csv" line per
-# lease (only written by build_image.sh if config.yml's dhcp.static_leases is non-empty).
-if [ -f /etc/dhcp_static_leases.env ]; then
+# /etc/config.json's "dhcp" key is a JSON array of resolved lease objects
+# {"name","ip","dns","mac","tags"} (config.yml's dhcp list).
+if [ "$(jq '.dhcp | length' /etc/config.json)" -gt 0 ]; then
     echo "Loaded static DHCP leases - configuring dhcp hosts"
-    while IFS='|' read -r name ip dns macs tags; do
-        [ -n "$name" ] || continue
+    lease_count=$(jq '.dhcp | length' /etc/config.json)
+    i=0
+    while [ "$i" -lt "$lease_count" ]; do
+        lease=$(jq -c ".dhcp[$i]" /etc/config.json)
+        name=$(printf '%s' "$lease" | jq -r '.name')
+        ip=$(printf '%s' "$lease" | jq -r '.ip')
+        dns=$(printf '%s' "$lease" | jq -r '.dns')
+
         uci add dhcp host
         uci set dhcp.@host[-1].name="$name"
         uci set dhcp.@host[-1].ip="$ip"
         [ "$dns" = "true" ] && uci set dhcp.@host[-1].dns='1'
-        OLD_IFS="$IFS"
-        IFS=','
-        set -f
-        for mac in $macs; do
-            [ -n "$mac" ] && uci add_list dhcp.@host[-1].mac="$mac"
+
+        for mac in $(printf '%s' "$lease" | jq -r '.mac[]'); do
+            uci add_list dhcp.@host[-1].mac="$mac"
         done
-        for tag in $tags; do
-            [ -n "$tag" ] && uci add_list dhcp.@host[-1].tag="$tag"
+        for tag in $(printf '%s' "$lease" | jq -r '.tags[]'); do
+            uci add_list dhcp.@host[-1].tag="$tag"
         done
-        set +f
-        IFS="$OLD_IFS"
-    done < /etc/dhcp_static_leases.env
-    rm -f /etc/dhcp_static_leases.env
+
+        i=$((i + 1))
+    done
 fi
 
 # Configure NTP
@@ -176,13 +179,21 @@ fi
 
 ########## port forwarding ##########
 
-# /etc/port_forwards.env has one pipe-delimited "name|src_dport|dest_ip|dest_port|proto|enabled"
-# line per forward (only written by build_image.sh if config.yml's firewall.port_forwards is
-# non-empty).
-if [ -f /etc/port_forwards.env ]; then
+# /etc/config.json's "port_forwards" key is a JSON array of resolved forwards
+# {"name","src_dport","dest_ip","dest_port","proto","enabled"} (config.yml's port_forwards).
+if [ "$(jq '.port_forwards | length' /etc/config.json)" -gt 0 ]; then
     echo "Loaded port forwards - configuring firewall redirects"
-    while IFS='|' read -r name src_dport dest_ip dest_port proto enabled; do
-        [ -n "$name" ] || continue
+    forward_count=$(jq '.port_forwards | length' /etc/config.json)
+    i=0
+    while [ "$i" -lt "$forward_count" ]; do
+        forward=$(jq -c ".port_forwards[$i]" /etc/config.json)
+        name=$(printf '%s' "$forward" | jq -r '.name')
+        src_dport=$(printf '%s' "$forward" | jq -r '.src_dport')
+        dest_ip=$(printf '%s' "$forward" | jq -r '.dest_ip')
+        dest_port=$(printf '%s' "$forward" | jq -r '.dest_port')
+        proto=$(printf '%s' "$forward" | jq -r '.proto')
+        enabled=$(printf '%s' "$forward" | jq -r '.enabled')
+
         uci add firewall redirect
         uci set firewall.@redirect[-1].name="$name"
         uci set firewall.@redirect[-1].target='DNAT'
@@ -193,8 +204,9 @@ if [ -f /etc/port_forwards.env ]; then
         uci set firewall.@redirect[-1].dest_port="$dest_port"
         [ -n "$proto" ] && uci add_list firewall.@redirect[-1].proto="$proto"
         [ "$enabled" = "false" ] && uci set firewall.@redirect[-1].enabled='0'
-    done < /etc/port_forwards.env
-    rm -f /etc/port_forwards.env
+
+        i=$((i + 1))
+    done
 fi
 
 
@@ -326,19 +338,21 @@ if [ -f /etc/adguardhome.yaml ]; then
         .users[0].password = \"$ADGUARD_PASS_HASH_ESC\"
     " /etc/adguardhome.yaml
 
-    # /etc/adguard_dns_rewrites.env will contain one "domain|answer" line per entry
-    if [ -f /etc/adguard_dns_rewrites.env ]; then
+    # adguard_dns_rewrites is a JSON array of {"domain","answer"}
+    if [ "$(jq '.adguard_dns_rewrites | length' /etc/config.json)" -gt 0 ]; then
         echo "Loaded DNS rewrites - configuring AdGuard filtering.rewrites"
         REWRITES=""
-        while IFS='|' read -r domain answer; do
-            [ -n "$domain" ] || continue
-            domain=$(json_escape "$domain")
-            answer=$(json_escape "$answer")
+        rewrite_count=$(jq '.adguard_dns_rewrites | length' /etc/config.json)
+        i=0
+        while [ "$i" -lt "$rewrite_count" ]; do
+            rewrite=$(jq -c ".adguard_dns_rewrites[$i]" /etc/config.json)
+            domain=$(json_escape "$(printf '%s' "$rewrite" | jq -r '.domain')")
+            answer=$(json_escape "$(printf '%s' "$rewrite" | jq -r '.answer')")
             entry="{\"domain\":\"$domain\",\"answer\":\"$answer\",\"enabled\":true}"
             REWRITES="${REWRITES:+$REWRITES,}$entry"
-        done < /etc/adguard_dns_rewrites.env
+            i=$((i + 1))
+        done
         yq -i ".filtering.rewrites = [$REWRITES]" /etc/adguardhome.yaml
-        rm -f /etc/adguard_dns_rewrites.env
     fi
 
     # Write creds for use by adguard-refresh hotplug script

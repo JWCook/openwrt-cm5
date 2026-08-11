@@ -15,6 +15,9 @@ build *args:
 lint:
     prek run -a
 
+test:
+    uv run pytest
+
 # Find an attached block device by model name (substring)
 find-sd search='MicroSD':
     #!/bin/bash
