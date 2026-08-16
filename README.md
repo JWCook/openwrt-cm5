@@ -17,7 +17,7 @@ This setup is tailored for my own uses, but may be useful for someone else wanti
 
 ### Network diagram
 ```
-[p0] Ethernet (ETH0) ──→ DHCP ──→ wan ──┐
+[p0] Ethernet ──→ DHCP ────→ wan ───────┐
                                         │
 [p1] 4G/5G ──→ Phone USB ──→ usb_wan ───┼─→ mwan3 ──→ Active WAN ──→ AdGuard ──→ WireGuard VPN ──→ Internet
                                         │
@@ -39,11 +39,11 @@ Add WireGuard VPN config to `config/config.yml`
 
 Additional config that can be edited/added, if needed:
 * Initial wifi connection info (e.g., a home network for testing)
-* SSH public key to use for SSH authentication (instead of a password)
+* SSH public key (to use for authentication instead of a password)
 * Extra packages to install
 * [OpenWRT image builder](https://openwrt.org/docs/guide-user/additional-software/imagebuilder) settings
-* `config/uci-defaults-common.sh` / `config/uci-defaults-travel.sh`: UCI default settings (run once on first boot; split into hardware-agnostic vs. travel-router-specific settings)
-* `config/adguardhome.yaml`: [AdGuardHome](https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration#configuration-file) settings
+* Extra UCI default settings: `config/uci-defaults.sh` (runs once on first boot)
+* Settings for [AdGuardHome](https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration#configuration-file): `config/adguardhome.yaml`
 
 ### Build & Flash
 ```sh

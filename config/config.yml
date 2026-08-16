@@ -16,7 +16,7 @@ network:
   usb_iface: usb0            # USB tethering (Android RNDIS)
   wifi_uplink_radio: radio0  # Radio used as WAN client (Travelmate)
   wifi_ap_radio: radio1      # Radio used for LAN access point
-  lan_ipaddr: "10.8.0.1"     # used by multiple config files)
+  lan_ipaddr: "10.8.0.1"
   lan_netmask: "255.255.255.0"
 
   # Optional: wifi networks (remove if unused)
@@ -103,7 +103,7 @@ imagebuilder:
 
   # Packages to install
   packages_add:
-    # USB/WiFi drivers
+    # USB + WiFi drivers
     - block-mount
     - kmod-mt76x2u
     - kmod-r8169

@@ -22,8 +22,7 @@ echo "Package changes: $PACKAGES"
 echo ""
 
 # Copy config files and scripts
-cp config/uci-defaults-common.sh files/etc/uci-defaults/10-common
-cp config/uci-defaults-travel.sh files/etc/uci-defaults/20-travel
+cp config/uci-defaults.sh files/etc/uci-defaults/10-custom-config
 cp user-scripts/mount_data.sh files/etc/uci-defaults/90-mount-data
 cp config/adguardhome.yaml files/etc/adguardhome.yaml
 mkdir -p files/usr/local/bin

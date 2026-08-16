@@ -215,9 +215,9 @@ def test_write_ssh_authorized_keys(tmp_path: Path) -> None:
     assert oct(keys_path.stat().st_mode)[-3:] == '600'
 
 
-# Matches the "Load configuration" line in config/uci-defaults-common.sh and
-# config/uci-defaults-travel.sh -- kept identical so this test exercises the exact jq filter
-# that ships in those scripts, not just an equivalent one.
+# Matches the "Load configuration" line in config/uci-defaults.sh -- kept identical
+# so this test exercises the exact jq filter that ships in that script, not just an
+# equivalent one.
 _JQ_SCALARS_TO_SHELL = r'to_entries[] | select(.value|type=="string") | "\(.key)=\(.value|@sh)"'
 
 
