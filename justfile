@@ -40,7 +40,7 @@ expand sd_device:
     ./scripts/expand_image.sh {{sd_device}}
 
 # Flash a built image to an SD card
-flash sd_device='/dev/sdX' image='dist/openwrt*.img' wipe='':
+flash sd_device='/dev/sdX' image='dist/openwrt-*-squashfs-factory.img.gz' wipe='':
     #!/bin/bash
     test -f {{image}} || { echo "Image {{image}} not found"; exit 1; }
     test -b {{sd_device}} || { echo "Device {{sd_device}} not attached"; exit 1; }
@@ -53,5 +53,5 @@ flash sd_device='/dev/sdX' image='dist/openwrt*.img' wipe='':
     fi
 
     echo "Flashing $image_file to {{sd_device}}"
-    sudo dd if="$image_file" of={{sd_device}} bs=4M status=progress
+    gunzip -c "$image_file" | sudo dd of={{sd_device}} bs=4M status=progress
     sync
