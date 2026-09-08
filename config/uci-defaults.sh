@@ -33,8 +33,7 @@ uci set dhcp.@dnsmasq[0].port='5353'
 uci set dhcp.@dnsmasq[0].noresolv='1'
 uci add_list dhcp.lan.dhcp_option="6,$LAN_IPADDR"
 
-# /etc/config.json's "dhcp" key is a JSON array of resolved lease objects
-# {"name","ip","dns","mac","tags"} (config.yml's dhcp list).
+# dhcp is a JSON array of resolved lease objects {"name","ip","dns","mac","tags"}
 if [ "$(jq '.dhcp | length' /etc/config.json)" -gt 0 ]; then
     echo "Loaded static DHCP leases - configuring dhcp hosts"
     lease_count=$(jq '.dhcp | length' /etc/config.json)
@@ -178,8 +177,7 @@ fi
 
 ########## port forwarding ##########
 
-# /etc/config.json's "port_forwards" key is a JSON array of resolved forwards
-# {"name","src_dport","dest_ip","dest_port","proto","enabled"} (config.yml's port_forwards).
+# port_forwards is a JSON array of resolved forwards {"name","src_dport","dest_ip","dest_port","proto","enabled"}
 if [ "$(jq '.port_forwards | length' /etc/config.json)" -gt 0 ]; then
     echo "Loaded port forwards - configuring firewall redirects"
     forward_count=$(jq '.port_forwards | length' /etc/config.json)
@@ -312,7 +310,7 @@ json_escape() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
-# Update AdGuard Home config: add VPN upstream DNS and configure credentials
+# Update AdGuard Home config: add upstream DNS and configure credentials
 if [ -f /etc/adguardhome.yaml ]; then
     VPN_DNS_ESC=$(json_escape "$VPN_DNS")
     LAN_IPADDR_ESC=$(json_escape "$LAN_IPADDR")
@@ -329,18 +327,9 @@ if [ -f /etc/adguardhome.yaml ]; then
     # adguard_dns_rewrites is a JSON array of {"domain","answer"}
     if [ "$(jq '.adguard_dns_rewrites | length' /etc/config.json)" -gt 0 ]; then
         echo "Loaded DNS rewrites - configuring AdGuard filtering.rewrites"
-        REWRITES=""
-        rewrite_count=$(jq '.adguard_dns_rewrites | length' /etc/config.json)
-        i=0
-        while [ "$i" -lt "$rewrite_count" ]; do
-            rewrite=$(jq -c ".adguard_dns_rewrites[$i]" /etc/config.json)
-            domain=$(json_escape "$(printf '%s' "$rewrite" | jq -r '.domain')")
-            answer=$(json_escape "$(printf '%s' "$rewrite" | jq -r '.answer')")
-            entry="{\"domain\":\"$domain\",\"answer\":\"$answer\",\"enabled\":true}"
-            REWRITES="${REWRITES:+$REWRITES,}$entry"
-            i=$((i + 1))
-        done
-        yq -i ".filtering.rewrites = [$REWRITES]" /etc/adguardhome.yaml
+        yq -i '.filtering.rewrites = (load("/etc/config.json").adguard_dns_rewrites
+            | map({"domain": .domain, "answer": .answer, "enabled": true}))' \
+            /etc/adguardhome.yaml
     fi
 
     # Write creds for use by adguard-refresh hotplug script
@@ -627,15 +616,14 @@ cat >> /etc/sysupgrade.conf <<'EOF'
 /etc/config/mwan3
 /etc/hotplug.d/iface
 /var/lib/adguardhome/data/
-
 EOF
 
 echo "=== uci-defaults completed: $(date) ==="
 
 # Enable and restart services
 /etc/init.d/dropbear restart
-/etc/init.d/network restart
 /etc/init.d/firewall restart
+/etc/init.d/network restart
 /etc/init.d/mwan3 enable
 /etc/init.d/mwan3 restart
 /etc/init.d/travelmate enable
